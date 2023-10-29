@@ -1,0 +1,6 @@
+prism provides CMake targets:
+
+    find_package(prism COMPONENTS prism::prism [components ...])
+    target_link_libraries(main PRIVATE prism::prism [components ...])
+
+    more infomation: https://github.com/cpp-prism/prism

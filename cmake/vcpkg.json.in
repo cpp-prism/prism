@@ -1,0 +1,15 @@
+{
+  "name": "@PORT_NAME@",
+  "version": "@PROJECT_VERSION@",
+  "port-version": 1,
+  "description": "prism",
+  "homepage": "https://github.com/cpp-prism/prism",
+  "supports": "(windows & !arm & !uwp) | osx | (linux & !arm)",
+  "dependencies": [
+    "catch2",
+    {
+      "name": "vcpkg-cmake",
+      "host": true
+    }
+  ]
+}

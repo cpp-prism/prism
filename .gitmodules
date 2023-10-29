@@ -1,0 +1,12 @@
+[submodule "components/prism_container"]
+	path = components/prism_container
+	url = ../prism_container.git
+[submodule "components/prism_qt_modular"]
+	path = components/prism_qt_modular
+	url = ../prism_qt_modular.git
+[submodule "components/prism_qt_core"]
+	path = components/prism_qt_core
+	url = ../prism_qt_core.git
+[submodule "components/prism_qt_ui"]
+	path = components/prism_qt_ui
+	url = ../prism_qt_ui.git
