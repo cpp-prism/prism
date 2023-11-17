@@ -1,7 +1,10 @@
 cmake_minimum_required(VERSION 3.14)
+if(NOT DEFINED PRISM_VERSION)
+    file(READ "${CMAKE_CURRENT_LIST_DIR}/vcpkg.json" _contents)
+    string(JSON PRISM_VERSION GET "${_contents}" version)
+endif()
 
-set(prism_version 1.0.0.0)
-project(prism VERSION ${prism_version} LANGUAGES CXX)
+project(prism VERSION ${PRISM_VERSION} LANGUAGES CXX)
 
 
 
@@ -32,6 +35,7 @@ target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_17)
 
 target_include_directories(${PROJECT_NAME} INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
 )
 
 
@@ -77,24 +81,23 @@ install(FILES "${PROJECT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
 
     install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}/)
 
-#configure_file(
-#    "${CMAKE_CURRENT_SOURCE_DIR}/Uninstall.cmake.in"
-#    "${CMAKE_CURRENT_BINARY_DIR}/Uninstall.cmake"
-#    @ONLY
-#)
-#
-#add_custom_target(uninstall_prism
-#    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_BINARY_DIR}/Uninstall.cmake"
-#    COMMENT "Uninstalling prism..."
-#)
+
+
+# vcpkg
+if(EXISTS ${VCPKG_ROOT})
+    execute_process( COMMAND git rev-parse --abbrev-ref HEAD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} OUTPUT_VARIABLE GIT_BRANCH OUTPUT_STRIP_TRAILING_WHITESPACE RESULT_VARIABLE GIT_BRANCH_RESULT )
+    execute_process( COMMAND git rev-parse HEAD WORKING_DIRECTORY ${PROJECT_SOURCE_DIR} OUTPUT_VARIABLE GIT_HASH OUTPUT_STRIP_TRAILING_WHITESPACE )
+    string(REPLACE "_" "-" PORT_NAME "${PROJECT_NAME}")
+    configure_file(${PROJECT_SOURCE_DIR}/cmake/vcpkg.json.in ${VCPKG_ROOT}/ports/${PORT_NAME}/vcpkg.json @ONLY NEWLINE_STYLE LF)
+    configure_file(${PROJECT_SOURCE_DIR}/cmake/vcpkg.json.in ${PROJECT_SOURCE_DIR}/vcpkg.json @ONLY NEWLINE_STYLE LF)
+    configure_file(${PROJECT_SOURCE_DIR}/cmake/vcpkg_cus_info.json.in ${VCPKG_ROOT}/ports/${PORT_NAME}/vcpkg_cus_info.json @ONLY NEWLINE_STYLE LF)
+    file(COPY ${PROJECT_SOURCE_DIR}/cmake/portfile.cmake DESTINATION ${VCPKG_ROOT}/ports/${PORT_NAME})
+endif()
 
 
 
 
-
-
-
-
+# test
 
 if(CMAKE_PROJECT_NAME STREQUAL "${PROJECT_NAME}")
 
