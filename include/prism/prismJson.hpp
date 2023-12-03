@@ -57,13 +57,13 @@ constexpr static inline bool is_whitespace(const char& c)
     return false;
 }
 template <typename T>
-bool is_null_string(T str)
+static inline bool is_null_string(T str)
 {
     return (str == nullptr || str[0] == '\0');
 }
 
 template <>
-bool is_null_string<std::string>(std::string str)
+inline bool is_null_string<std::string>(std::string str)
 {
     return str.empty();
 }
@@ -525,7 +525,9 @@ struct jsonValue<T, std::enable_if_t<std::is_pointer_v<T> ||
                 // jsonValue<dpt>::append_value(stream, nullptr, std::move(*(value.lock())), identation, std::move(level));
             }
             else
+            {
                 jsonType<dpt>::type::append_value(stream, nullptr, std::move(*value), identation, std::move(level));
+            }
         }
     }
 
@@ -593,7 +595,10 @@ struct jsonArrayBase : public jsonValueBase<jsonArrayBase<derived>>
     template <class TT>
     constexpr static void from_jsonStr([[maybe_unused]] TT&& model, [[maybe_unused]] std::string_view&& str, [[maybe_unused]] int start, [[maybe_unused]] int end)
     {
-        model = TT{};
+        if constexpr(std::is_copy_constructible<TT>::value)
+        {
+            model = TT{};
+        }
         int count_quote = 0;  //"
         int count_brace = 0;  //{
         int count_braket = 0; //[
@@ -810,13 +815,19 @@ struct jsonObjectBase : public jsonValueBase<jsonObjectBase<derived>>
                                            prism::utilities::is_specialization<T, std::unordered_map>::value)
                         {
                             if (item_count == 0)
+                            {
+                                if constexpr(std::is_copy_constructible<T>::value)
                                 model = T{};
+                            }
                             derived::read_sub_kv(std::move(model), std::move(str), key_idx_start, key_idx_end, value_Idx_start, value_Idx_end);
                         }
                         else if constexpr (utilities::has_def<jsonObject<T>>::value)
                         {
                             if (item_count == 0)
+                            {
+                                if constexpr(std::is_copy_constructible<T>::value)
                                 model = T{};
+                            }
                             derived::read_sub_kv(std::move(model), std::move(str), key_idx_start, key_idx_end, value_Idx_start, value_Idx_end);
                         }
                         else
