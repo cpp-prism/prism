@@ -65,7 +65,8 @@ static inline bool is_null_string(T str)
 template <>
 inline bool is_null_string<std::string>(std::string str)
 {
-    return str.empty();
+    //return str.empty();
+    return false;
 }
 
 template <class>
