@@ -426,7 +426,10 @@ struct jsonValue<T, std::enable_if_t<std::is_arithmetic_v<T> &&
     constexpr static void append_value([[maybe_unused]] std::ostringstream& stream, [[maybe_unused]] const char* fname, [[maybe_unused]] T&& value, [[maybe_unused]] int identation, [[maybe_unused]] int&& level)
     {
         if constexpr(std::is_same_v<uint8_t,T>)
-                stream << static_cast<int>(value);
+            stream << static_cast<int>(value);
+        else if constexpr(std::is_same_v<float,T> || std::is_same_v<double,T>)
+            stream << std::fixed << std::setprecision(2) << std::showpoint  << value;
+            //stream << std::fixed << std::showpoint  << value;
         else
             stream << value;
     }
