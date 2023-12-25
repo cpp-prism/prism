@@ -63,7 +63,7 @@ static inline bool is_null_string(T str)
 }
 
 template <>
-inline bool is_null_string<std::string>(std::string str)
+inline bool is_null_string<std::string>([[maybe_unused]]std::string str)
 {
     //return str.empty();
     return false;
@@ -618,14 +618,13 @@ struct jsonArrayBase : public jsonValueBase<jsonArrayBase<derived>>
          */
         int value_Idx_start = -1;
         int value_Idx_end = -1;
-        int comma_idx = -1;
 
         for (int i = start; i < end + 1; ++i)
         {
             const char& c = str[i];
             // std::cout << c;
 
-            if ((pre_char_idx != -1 && str[pre_char_idx] != '\\' || pre_char_idx == -1) && c == '"')
+            if (((pre_char_idx != -1 && str[pre_char_idx] != '\\') || pre_char_idx == -1) && c == '"')
                 ++count_quote;
             if (count_quote % 2 == 0 && c == '[')
                 ++count_braket;
@@ -663,7 +662,6 @@ struct jsonArrayBase : public jsonValueBase<jsonArrayBase<derived>>
 
                         value_Idx_start = -1;
                         value_Idx_end = -1;
-                        comma_idx = -1;
                     }
 
                     if (count_braket == 0)
@@ -772,7 +770,7 @@ struct jsonObjectBase : public jsonValueBase<jsonObjectBase<derived>>
             const char& c = str[i];
             // std::cout << c;
 
-            if ((pre_char_idx != -1 && str[pre_char_idx] != '\\' || pre_char_idx == -1) && c == '"')
+            if (((pre_char_idx != -1 && str[pre_char_idx] != '\\') || pre_char_idx == -1) && c == '"')
                 ++count_quote;
             if (count_quote % 2 == 0 && c == '[')
                 ++count_braket;

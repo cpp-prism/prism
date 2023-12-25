@@ -435,10 +435,10 @@
         constexpr static bool run(Class& model, const char* fname, LAM&& lambda, int& level)      \
         {                                                                                         \
             ++level;                                                                              \
-            bool hited = false;                                                                   \
             using base_types = prism::reflection::privates::baseTypes<Class>::t;                   \
             if constexpr (!std::is_same_v<base_types, void>)                                      \
             {                                                                                     \
+                bool hited = false;                                                                   \
                 prism::reflection::privates::for_each_bases<base_types>([&](auto* base_ptr_null) { \
                     using b_t = std::remove_pointer_t<decltype(base_ptr_null)>;                   \
                     b_t& baseRef = static_cast<b_t&>(model);                                      \
