@@ -1,6 +1,6 @@
 #define CATCH_CONFIG_RUNNER
+#include "../prism/include/prism/prismJson.hpp"
 #include "models/test_model.h"
-#include "prism/prism/prismjson.hpp"
 #include <catch2/catch_all.hpp>
 
 #ifdef _MSC_VER
@@ -56,7 +56,7 @@ TEST_CASE("json测试")
     std::string json2 = prism::json::toJsonString(std::move(*t), 2);
 
     // std::cout << json << std::endl;
-    // std::cout << json2 << std::endl;
+    std::cout << json2 << std::endl;
     // return;
 
     SECTION("struct.member")
@@ -149,7 +149,6 @@ TEST_CASE("json测试")
     }
     REQUIRE(json2 == json);
 }
-
 
 int main(int argc, const char** argv)
 {

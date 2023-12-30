@@ -2,14 +2,11 @@
 
 #include "models/test_model.h"
 #include <catch2/catch_all.hpp>
-#include <catch2/catch_all.hpp>
 #include <memory>
 
 #ifdef _MSC_VER
 #include <Windows.h>
 #endif
-
-
 
 TEST_CASE("reflect base type fields")
 {

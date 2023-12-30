@@ -3,7 +3,6 @@
 
 #include "../../include/prism/prismJson.hpp"
 
-
 enum language
 {
     unknow,
@@ -67,7 +66,7 @@ struct tst_struct
     std::optional<bool*> my_opt_ptr;
     tst_sub_struct my_struct;
     std::map<std::string, tst_struct> my_map;
-    std::map<std::string, std::shared_ptr<tst_sub_struct>> my_map2 {{"key1",std::make_shared<tst_sub_struct>()},{"key2",{}}};
+    std::map<std::string, std::shared_ptr<tst_sub_struct>> my_map2{{"key1", std::make_shared<tst_sub_struct>()}, {"key2", {}}};
     std::unordered_map<std::string, tst_sub_struct> my_unordermap;
     std::vector<tst_sub_struct> my_vec_sp;
     std::list<tst_struct> my_list_sp;
@@ -87,8 +86,7 @@ struct tst_struct
 // PRISM_IGNORE_JSON_FIELD(tst_struct,my_timestamp)
 // PRISM_IGNORE_JSON_FIELD(tst_struct,my_int)
 
-PRISM_FIELDS(tst_struct, my_int, my_bool, my_float, my_double, my_longlong, my_string, my_opt_str, my_opt_int, my_ptr_int, my_sptr_int, my_opt_ptr, my_map,my_map2, my_unordermap, my_vec_sp, my_list_sp, my_list_int, my_list_std_string, my_shared_self, my_shared_sub, my_datetime, my_timestamp, lang)
-
+PRISM_FIELDS(tst_struct, my_int, my_bool, my_float, my_double, my_longlong, my_string, my_opt_str, my_opt_int, my_ptr_int, my_sptr_int, my_opt_ptr, my_map, my_map2, my_unordermap, my_vec_sp, my_list_sp, my_list_int, my_list_std_string, my_shared_self, my_shared_sub, my_datetime, my_timestamp, lang)
 
 struct Base1
 {
@@ -127,8 +125,8 @@ constexpr void append2ostream(std::ostream& stream, T& value)
             stream << "null" << std::endl;
     }
     else if constexpr (std::is_pointer_v<t_> ||
-            prism::utilities::is_specialization<t_,std::shared_ptr>::value ||
-            prism::utilities::is_specialization<t_,std::unique_ptr>::value )
+                       prism::utilities::is_specialization<t_, std::shared_ptr>::value ||
+                       prism::utilities::is_specialization<t_, std::unique_ptr>::value)
     {
         if (value == nullptr)
             stream << "nullptr" << std::endl;
@@ -139,35 +137,35 @@ constexpr void append2ostream(std::ostream& stream, T& value)
     {
         stream << "object type addreass: 0x" << reinterpret_cast<size_t>(reinterpret_cast<void*>(&value)) << std::endl;
     }
-    else if constexpr (prism::utilities::is_specialization<t_,std::vector>::value ||
-            prism::utilities::is_specialization<t_,std::list>::value )
+    else if constexpr (prism::utilities::is_specialization<t_, std::vector>::value ||
+                       prism::utilities::is_specialization<t_, std::list>::value)
     {
-        for(auto& v:value)
+        for (auto& v : value)
         {
-            stream << " value:" ;
-            append2ostream(stream,v);
+            stream << " value:";
+            append2ostream(stream, v);
         }
     }
-    else if constexpr (prism::utilities::is_specialization<t_,std::map>::value ||
-            prism::utilities::is_specialization<t_,std::unordered_map>::value )
+    else if constexpr (prism::utilities::is_specialization<t_, std::map>::value ||
+                       prism::utilities::is_specialization<t_, std::unordered_map>::value)
     {
-        for(auto [k,v]:value)
+        for (auto [k, v] : value)
         {
-            if constexpr (std::is_same_v<std::remove_cv_t<decltype(k)>,std::string>)
+            if constexpr (std::is_same_v<std::remove_cv_t<decltype(k)>, std::string>)
             {
-                stream << "key:" << k << " value:" ;
-                append2ostream(stream,v);
+                stream << "key:" << k << " value:";
+                append2ostream(stream, v);
             }
             else
-            throw "std::pair unknow key type";
+                throw "std::pair unknow key type";
         }
     }
-    else if constexpr(std::is_same_v<t_,std::chrono::system_clock::time_point>)
+    else if constexpr (std::is_same_v<t_, std::chrono::system_clock::time_point>)
     {
         std::time_t time_t_now = std::chrono::system_clock::to_time_t(value);
         // 使用 std::put_time 格式化输出
         std::tm timeinfo = *std::localtime(&time_t_now);
-        char buffer[80];
+        char buffer[80]{};
         std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &timeinfo);
 
         // 打印格式化后的时间
@@ -177,10 +175,14 @@ constexpr void append2ostream(std::ostream& stream, T& value)
     {
         stream << prism::enums::enum_info<t_>::tostring(value) << std::endl;
     }
+    else if constexpr (std::is_same_v<T, long>)
+    {
+        stream << value << std::endl;
+    }
     else
     {
         std::cout << prism::utilities::typeName<t_>::value << std::endl;
-       throw "unknow type";
+        throw "unknow type";
     }
 }
 

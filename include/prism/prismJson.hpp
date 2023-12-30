@@ -5,21 +5,23 @@
 #if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
 #include <bits/error_constants.h>
 #include <tuple>
-namespace std {
-template <typename T>
-std::tuple<const char*,errc> from_chars(const char* const _First, const char* const _Last, T& _Value)
+namespace std
 {
-    std::string str = std::string(_First,_Last);
-    try {
-       _Value =  std::atoi(str.c_str());
-       return std::make_tuple<const char*,errc>("",std::errc());
+template <typename T>
+std::tuple<const char*, errc> from_chars(const char* const _First, const char* const _Last, T& _Value)
+{
+    std::string str = std::string(_First, _Last);
+    try
+    {
+        _Value = std::atoi(str.c_str());
+        return std::make_tuple<const char*, errc>("", std::errc());
     }
     catch (const std::exception& e)
     {
-       return std::make_tuple<const char*,errc>(e.what(),std::errc());
+        return std::make_tuple<const char*, errc>(e.what(), std::errc());
     }
 }
-}
+} // namespace std
 #else
 #include <charconv>
 #endif
@@ -63,9 +65,9 @@ static inline bool is_null_string(T str)
 }
 
 template <>
-inline bool is_null_string<std::string>([[maybe_unused]]std::string str)
+inline bool is_null_string<std::string>([[maybe_unused]] std::string str)
 {
-    //return str.empty();
+    // return str.empty();
     return false;
 }
 
@@ -628,7 +630,7 @@ struct jsonArrayBase : public jsonValueBase<jsonArrayBase<derived>>
     template <class TT>
     constexpr static void from_jsonStr([[maybe_unused]] TT&& model, [[maybe_unused]] std::string_view&& str, [[maybe_unused]] int start, [[maybe_unused]] int end)
     {
-        if constexpr(std::is_copy_constructible<TT>::value)
+        if constexpr (std::is_copy_constructible<TT>::value)
         {
             model = TT{};
         }
@@ -847,8 +849,8 @@ struct jsonObjectBase : public jsonValueBase<jsonObjectBase<derived>>
                         {
                             if (item_count == 0)
                             {
-                                if constexpr(std::is_copy_constructible<T>::value)
-                                model = T{};
+                                if constexpr (std::is_copy_constructible<T>::value)
+                                    model = T{};
                             }
                             derived::read_sub_kv(std::move(model), std::move(str), key_idx_start, key_idx_end, value_Idx_start, value_Idx_end);
                         }
@@ -856,8 +858,8 @@ struct jsonObjectBase : public jsonValueBase<jsonObjectBase<derived>>
                         {
                             if (item_count == 0)
                             {
-                                if constexpr(std::is_copy_constructible<T>::value)
-                                model = T{};
+                                if constexpr (std::is_copy_constructible<T>::value)
+                                    model = T{};
                             }
                             derived::read_sub_kv(std::move(model), std::move(str), key_idx_start, key_idx_end, value_Idx_start, value_Idx_end);
                         }
