@@ -69,6 +69,35 @@ inline bool is_null_string<std::string>([[maybe_unused]]std::string str)
     return false;
 }
 
+template <class T>
+static std::enable_if_t<std::is_same_v<float, T> || std::is_same_v<double, T>, std::string> formatfloat(const T& value)
+{
+    std::stringstream ss;
+    ss << std::fixed << std::setprecision(15) << std::showpoint << value;
+    std::string str = ss.str();
+
+    // 去掉尾随的零
+    size_t dotPos = str.find_last_of('.');
+    if (dotPos != std::string::npos)
+    {
+        while (true)
+        {
+            size_t zeroPos = str.find_last_of('0');
+            if (zeroPos != std::string::npos && zeroPos > dotPos)
+            {
+                str.erase(zeroPos); // 去掉小数点后的尾随零
+                if (str.back() == '.')
+                {
+                    str.pop_back(); // 如果整个小数部分都是零，去掉小数点
+                }
+            }
+            else
+                break;
+        }
+    }
+    return str;
+}
+
 template <class>
 struct jsonValueBase;
 template <class T, class = void>
@@ -425,11 +454,11 @@ struct jsonValue<T, std::enable_if_t<std::is_arithmetic_v<T> &&
 {
     constexpr static void append_value([[maybe_unused]] std::ostringstream& stream, [[maybe_unused]] const char* fname, [[maybe_unused]] T&& value, [[maybe_unused]] int identation, [[maybe_unused]] int&& level)
     {
-        if constexpr(std::is_same_v<uint8_t,T>)
+        if constexpr (std::is_same_v<uint8_t, T>)
             stream << static_cast<int>(value);
-        else if constexpr(std::is_same_v<float,T> || std::is_same_v<double,T>)
-            stream << std::fixed << std::setprecision(2) << std::showpoint  << value;
-            //stream << std::fixed << std::showpoint  << value;
+        else if constexpr (std::is_same_v<float, T> || std::is_same_v<double, T>)
+            stream << formatfloat(value);
+        // stream << std::fixed << std::showpoint  << value;
         else
             stream << value;
     }
