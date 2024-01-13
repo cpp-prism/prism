@@ -27,31 +27,28 @@ struct C
     int f_a = 0;
     bool f_b = true;
 };
+
 struct AT_json_alias
 {
+    using value_type = const char*;
 };
 
-PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(int, AT_json_alias, "alias of int")
-PRISM_FIELD_ATTRIBUTE(&A::f_a, AT_json_alias, "alias of a::f_a")
-PRISM_FIELD_ATTRIBUTE(&A::f_b, AT_json_alias, "alias of a::f_b")
+PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(int, AT_json_alias, "alias of int") //规则1:所有类的int字段注册一个const char*的标注，
+PRISM_FIELD_ATTRIBUTE(&A::f_a, AT_json_alias, "alias of a::f_a")      // 规则2 A类的f_a 注册一个const char*标注，覆盖上一行的注册
+PRISM_FIELD_ATTRIBUTE(&A::f_b, AT_json_alias, "alias of a::f_b")      // 规则3 A类的f_b 注册一个const char*标注
+
 
 TEST_CASE("attribues")
 {
-    std::optional<const char*> aa = prism::attributes::privates::field_attribute<A, int, &A::f_a, AT_json_alias, const char*>::value();
-    std::optional<const char*> ab = prism::attributes::privates::field_attribute<A, bool, &A::f_b, AT_json_alias, const char*>::value();
-    std::optional<const char*> ba = prism::attributes::privates::field_attribute<B, int, &B::f_a, AT_json_alias, const char*>::value();
-    std::optional<const char*> bb = prism::attributes::privates::field_attribute<B, bool, &B::f_b, AT_json_alias, const char*>::value();
-    std::cout << aa.value() << std::endl;
-    std::cout << ab.value() << std::endl;
-    std::cout << ba.value() << std::endl;
-    std::cout << ab.has_value() << std::endl;
+    std::optional<const char*> aa = PRISM_GET_FIELD_ATTRIBUTE(&A::f_a, AT_json_alias);
+    std::optional<const char*> ab = PRISM_GET_FIELD_ATTRIBUTE(&A::f_b, AT_json_alias);
+    std::optional<const char*> ba = PRISM_GET_FIELD_ATTRIBUTE(&B::f_a, AT_json_alias);
+    std::optional<const char*> bb = PRISM_GET_FIELD_ATTRIBUTE(&B::f_b, AT_json_alias);
 
-    // auto ar = field_attribute<decltype(&A::f_a), AT_json_alias>::value;
-    // auto br = field_attribute<decltype(&B::f_a), AT_json_alias>::value;
-    // auto cr = field_attribute<decltype(&C::f_a), AT_json_alias>::value;
-    // std::cout << "has attribute:" << ar.has_value() << "    value:" << ar.value() << std::endl;
-    // std::cout << "has attribute:" << br.has_value() << "    value:" << br.value() << std::endl;
-    // std::cout << "has attribute:" << cr.has_value() << "    value:" << cr.value() << std::endl;
+    std::cout << aa.value() << std::endl;     // 规则2:alias of a::f_a
+    std::cout << ab.value() << std::endl;     // 规则3:alias of a::f_b
+    std::cout << ba.value() << std::endl;     // 规则1 alias of int
+    std::cout << ab.has_value() << std::endl; // 没有注册，std::optional 无值
 }
 
 TEST_CASE("reflect base type fields")

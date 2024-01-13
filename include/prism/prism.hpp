@@ -84,23 +84,29 @@
 
 // ATTRIBUTE
 
-#define PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(FieldType, AttributeName, DefalutValue)                 \
-    namespace prism                                                                               \
-    {                                                                                             \
-    namespace attributes                                                                          \
-    {                                                                                             \
-    namespace privates                                                                            \
-    {                                                                                             \
-    template <class T, FieldType T::*fn>                                                          \
-    struct field_attribute<T, FieldType, fn, AttributeName, std::decay_t<decltype(DefalutValue)>> \
-    {                                                                                             \
-        constexpr static std::stdoptional<std::decay_t<decltype(DefalutValue)>> value()           \
-        {                                                                                         \
-            return DefalutValue;                                                                  \
-        }                                                                                         \
-    };                                                                                            \
-    }                                                                                             \
-    }                                                                                             \
+#define PRISM_GET_FIELD_ATTRIBUTE(memberFucPtr, AttributeName)                                                                \
+    ::prism::attributes::privates::field_attribute<decltype(prism::utilities::getT(std::declval<decltype(memberFucPtr)>())),  \
+                                                   decltype(prism::utilities::getMT(std::declval<decltype(memberFucPtr)>())), \
+                                                   memberFucPtr,                                                              \
+                                                   AttributeName>::value();
+
+#define PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(FieldType, AttributeName, DefalutValue) \
+    namespace prism                                                               \
+    {                                                                             \
+    namespace attributes                                                          \
+    {                                                                             \
+    namespace privates                                                            \
+    {                                                                             \
+    template <class T, FieldType T::*fn>                                          \
+    struct field_attribute<T, FieldType, fn, AttributeName>                       \
+    {                                                                             \
+        constexpr static std::stdoptional<AttributeName::value_type> value()      \
+        {                                                                         \
+            return DefalutValue;                                                  \
+        }                                                                         \
+    };                                                                            \
+    }                                                                             \
+    }                                                                             \
     }
 
 #define PRISM_FIELD_ATTRIBUTE(memberFucPtr, AttributeName, DefalutValue)                              \
@@ -114,10 +120,9 @@
     struct field_attribute<decltype(prism::utilities::getT(std::declval<decltype(memberFucPtr)>())),  \
                            decltype(prism::utilities::getMT(std::declval<decltype(memberFucPtr)>())), \
                            memberFucPtr,                                                              \
-                           AttributeName,                                                             \
-                           std::decay_t<decltype(DefalutValue)>>                                      \
+                           AttributeName>                                                             \
     {                                                                                                 \
-        constexpr static std::stdoptional<std::decay_t<decltype(DefalutValue)>> value()               \
+        constexpr static std::stdoptional<AttributeName::value_type> value()                          \
         {                                                                                             \
             return DefalutValue;                                                                      \
         }                                                                                             \
@@ -284,8 +289,8 @@
     {                                                              \
     namespace attributes                                           \
     {                                                              \
-    template <class AT, class VT>                                  \
-    struct st_field_attribute_do<Class, AT, VT>                    \
+    template <class AT>                                            \
+    struct st_field_attribute_do<Class, AT>                        \
     {                                                              \
         template <class LAM>                                       \
         constexpr static void run(const char* fname, LAM&& lambda) \
@@ -293,9 +298,9 @@
             switch (prism::utilities::const_hash(fname))           \
             {
 
-#define AT_INSERT_ITM(Class, Field1)                                                                                                                     \
-    case prism::utilities::const_hash(#Field1):                                                                                                          \
-        lambda(prism::attributes::privates::field_attribute<Class, decltype(prism::utilities::getMT(&Class::Field1)), &Class::Field1, AT, VT>::value()); \
+#define AT_INSERT_ITM(Class, Field1)                                                                                                                 \
+    case prism::utilities::const_hash(#Field1):                                                                                                      \
+        lambda(prism::attributes::privates::field_attribute<Class, decltype(prism::utilities::getMT(&Class::Field1)), &Class::Field1, AT>::value()); \
         break;
 
 #define AT_ONLY_FIRST_AFTER(Class, Field1, ...) \
@@ -766,37 +771,24 @@ constexpr inline bool is_field_ignore()
     return false;
 }
 // attributes of class
-template <class T, class AT, class VT>
+template <class T, class AT>
 struct class_attribute
 {
-    constexpr inline std::stdoptional<VT> value();
+    constexpr inline std::stdoptional<typename AT::value_type> value();
 };
 // attributes of field
-template <class T, class M, M T::*fn, class AT, class VT>
+template <class T, class M, M T::*fn, class AT>
 struct field_attribute
 {
-    constexpr static std::stdoptional<VT> value()
+    constexpr static std::stdoptional<typename AT::value_type> value()
     {
         return std::stdnullopt;
     }
 };
 
-// whether has attributes ..
-template <class T, class M, M T::*fn, class AT, class VT>
-class field_has_attribute
-{
-    using UU = field_attribute<T, M, fn, AT, VT>;
-    template <typename U>
-    static auto test(U* p) -> decltype(U::value(), std::true_type());
-    static auto test(...) -> std::false_type;
-
-  public:
-    static constexpr bool value = decltype(test(static_cast<UU*>(nullptr)))::value;
-};
-
 } // namespace privates
 
-template <class T, class AT, class VT>
+template <class T, class AT>
 struct st_field_attribute_do
 {
     template <class LAM>
