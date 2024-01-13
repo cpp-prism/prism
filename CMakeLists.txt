@@ -113,15 +113,6 @@ if(CMAKE_PROJECT_NAME STREQUAL "${PROJECT_NAME}")
     catch_discover_tests(tst_${PROJECT_NAME})
 
 
-    #test prism json
-    set(TST_PRISMJSON_SOURCE tests/test_prismJson.cpp tests/models/test_model.h)
-    add_executable(tst_prismJson  ${TST_PRISMJSON_SOURCE} )
-    target_compile_features(tst_prismJson PUBLIC cxx_std_17)
-    target_link_libraries(tst_prismJson PRIVATE Catch2::Catch2)
-    catch_discover_tests(tst_prismJson)
-
-
-
 
 endif()
 

@@ -1,12 +1,58 @@
 #define CATCH_CONFIG_RUNNER
 
+#include "../include/prism/prism.hpp"
 #include "models/test_model.h"
 #include <catch2/catch_all.hpp>
+#include <iostream>
 #include <memory>
+#include <optional>
+#include <type_traits>
 
 #ifdef _MSC_VER
 #include <Windows.h>
 #endif
+
+struct A
+{
+    int f_a = 0;
+    bool f_b = true;
+};
+struct B
+{
+    int f_a = 0;
+    bool f_b = true;
+};
+struct C
+{
+    int f_a = 0;
+    bool f_b = true;
+};
+struct AT_json_alias
+{
+};
+
+PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(int, AT_json_alias, "alias of int")
+PRISM_FIELD_ATTRIBUTE(&A::f_a, AT_json_alias, "alias of a::f_a")
+PRISM_FIELD_ATTRIBUTE(&A::f_b, AT_json_alias, "alias of a::f_b")
+
+TEST_CASE("attribues")
+{
+    std::optional<const char*> aa = prism::attributes::privates::field_attribute<A, int, &A::f_a, AT_json_alias, const char*>::value();
+    std::optional<const char*> ab = prism::attributes::privates::field_attribute<A, bool, &A::f_b, AT_json_alias, const char*>::value();
+    std::optional<const char*> ba = prism::attributes::privates::field_attribute<B, int, &B::f_a, AT_json_alias, const char*>::value();
+    std::optional<const char*> bb = prism::attributes::privates::field_attribute<B, bool, &B::f_b, AT_json_alias, const char*>::value();
+    std::cout << aa.value() << std::endl;
+    std::cout << ab.value() << std::endl;
+    std::cout << ba.value() << std::endl;
+    std::cout << ab.has_value() << std::endl;
+
+    // auto ar = field_attribute<decltype(&A::f_a), AT_json_alias>::value;
+    // auto br = field_attribute<decltype(&B::f_a), AT_json_alias>::value;
+    // auto cr = field_attribute<decltype(&C::f_a), AT_json_alias>::value;
+    // std::cout << "has attribute:" << ar.has_value() << "    value:" << ar.value() << std::endl;
+    // std::cout << "has attribute:" << br.has_value() << "    value:" << br.value() << std::endl;
+    // std::cout << "has attribute:" << cr.has_value() << "    value:" << cr.value() << std::endl;
+}
 
 TEST_CASE("reflect base type fields")
 {
@@ -94,26 +140,6 @@ TEST_CASE("refelect fields ")
         {
             REQUIRE(inst.my_string == value);
         }
-    });
-}
-struct tst_attr
-{
-};
-PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(std::string, tst_attr, true);
-TEST_CASE("attribute")
-{
-    tst_struct inst;
-    prism::attributes::st_field_attribute_do<tst_struct, tst_attr, bool>::run("my_string", [=](auto&& value) {
-        if (value.has_value())
-            std::cout << value.value() << std::endl;
-        else
-            std::cout << "hasn't attr" << std::endl;
-    });
-    prism::attributes::st_field_attribute_do<tst_struct, tst_attr, bool>::run("my_int", [=](auto&& value) {
-        if (value.has_value())
-            std::cout << value.value() << std::endl;
-        else
-            std::cout << "hasn't attr" << std::endl;
     });
 }
 

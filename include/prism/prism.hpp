@@ -2,6 +2,7 @@
 #define PRISM_PRISM_H
 
 #include "utilities/typeName.hpp"
+#include <cstring>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -10,7 +11,6 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <cstring>
 
 #define PP_NARG(...) PP_NARG_(__VA_ARGS__, PP_RSEQ_N())
 #define PP_NARG_(...) PP_ARG_N(__VA_ARGS__)
@@ -35,7 +35,7 @@
 #define PRISM_ENUM(en_t, ...)                                                                    \
     namespace prism                                                                              \
     {                                                                                            \
-    namespace enums                                                                               \
+    namespace enums                                                                              \
     {                                                                                            \
     template <class T>                                                                           \
     struct enum_info<T, std::enable_if_t<std::is_same_v<T, en_t>, void>>                         \
@@ -45,9 +45,9 @@
             static std::map<T, const char*> map_                                                 \
                 PRISM_ENUM_INITLIST_EXPAND(PP_NARG(__VA_ARGS__), en_t, __VA_ARGS__) return map_; \
         }                                                                                        \
-        static std::map<const char*, T, prism::enums::compareCharPointers>& getStrMap()           \
+        static std::map<const char*, T, prism::enums::compareCharPointers>& getStrMap()          \
         {                                                                                        \
-            static std::map<const char*, T, prism::enums::compareCharPointers> map_;              \
+            static std::map<const char*, T, prism::enums::compareCharPointers> map_;             \
             if (map_.size() == 0)                                                                \
             {                                                                                    \
                 for (const std::pair<T, const char*> item : getEnumMap())                        \
@@ -87,9 +87,9 @@
 #define PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(FieldType, AttributeName, DefalutValue)                 \
     namespace prism                                                                               \
     {                                                                                             \
-    namespace attributes                                                                           \
+    namespace attributes                                                                          \
     {                                                                                             \
-    namespace privates                                                                             \
+    namespace privates                                                                            \
     {                                                                                             \
     template <class T, FieldType T::*fn>                                                          \
     struct field_attribute<T, FieldType, fn, AttributeName, std::decay_t<decltype(DefalutValue)>> \
@@ -103,20 +103,43 @@
     }                                                                                             \
     }
 
-#define PRISM_IGNORE_FIELD(Class, Field, Business)                                                                                                       \
-    namespace prism                                                                                                                                      \
-    {                                                                                                                                                    \
-    namespace attributes                                                                                                                                  \
-    {                                                                                                                                                    \
-    namespace privates                                                                                                                                    \
-    {                                                                                                                                                    \
-    template <>                                                                                                                                          \
+#define PRISM_FIELD_ATTRIBUTE(memberFucPtr, AttributeName, DefalutValue)                              \
+    namespace prism                                                                                   \
+    {                                                                                                 \
+    namespace attributes                                                                              \
+    {                                                                                                 \
+    namespace privates                                                                                \
+    {                                                                                                 \
+    template <>                                                                                       \
+    struct field_attribute<decltype(prism::utilities::getT(std::declval<decltype(memberFucPtr)>())),  \
+                           decltype(prism::utilities::getMT(std::declval<decltype(memberFucPtr)>())), \
+                           memberFucPtr,                                                              \
+                           AttributeName,                                                             \
+                           std::decay_t<decltype(DefalutValue)>>                                      \
+    {                                                                                                 \
+        constexpr static std::stdoptional<std::decay_t<decltype(DefalutValue)>> value()               \
+        {                                                                                             \
+            return DefalutValue;                                                                      \
+        }                                                                                             \
+    };                                                                                                \
+    }                                                                                                 \
+    }                                                                                                 \
+    }
+
+#define PRISM_IGNORE_FIELD(Class, Field, Business)                                                                                                           \
+    namespace prism                                                                                                                                          \
+    {                                                                                                                                                        \
+    namespace attributes                                                                                                                                     \
+    {                                                                                                                                                        \
+    namespace privates                                                                                                                                       \
+    {                                                                                                                                                        \
+    template <>                                                                                                                                              \
     constexpr inline bool is_field_ignore<Class, decltype(prism::utilities::getMT(&Class::Field)), &Class::Field, prism::utilities::const_hash(#Business)>() \
-    {                                                                                                                                                    \
-        return true;                                                                                                                                     \
-    }                                                                                                                                                    \
-    }                                                                                                                                                    \
-    }                                                                                                                                                    \
+    {                                                                                                                                                        \
+        return true;                                                                                                                                         \
+    }                                                                                                                                                        \
+    }                                                                                                                                                        \
+    }                                                                                                                                                        \
     }
 
 #define AT_LEFT130(Class, f1, ...) AT_INSERT_ITM(Class, f1) AT_LEFT129(Class, __VA_ARGS__)
@@ -259,7 +282,7 @@
 #define AT_ONLY_FIRST_BEFORE(Class, ...)                           \
     namespace prism                                                \
     {                                                              \
-    namespace attributes                                            \
+    namespace attributes                                           \
     {                                                              \
     template <class AT, class VT>                                  \
     struct st_field_attribute_do<Class, AT, VT>                    \
@@ -267,11 +290,11 @@
         template <class LAM>                                       \
         constexpr static void run(const char* fname, LAM&& lambda) \
         {                                                          \
-            switch (prism::utilities::const_hash(fname))             \
+            switch (prism::utilities::const_hash(fname))           \
             {
 
-#define AT_INSERT_ITM(Class, Field1)                                                                                                                 \
-    case prism::utilities::const_hash(#Field1):                                                                                                        \
+#define AT_INSERT_ITM(Class, Field1)                                                                                                                     \
+    case prism::utilities::const_hash(#Field1):                                                                                                          \
         lambda(prism::attributes::privates::field_attribute<Class, decltype(prism::utilities::getMT(&Class::Field1)), &Class::Field1, AT, VT>::value()); \
         break;
 
@@ -421,46 +444,46 @@
     FD_LEFT##n(Class, __VA_ARGS__)            \
         FD_ONLY_FIRST_AFTER(Class, __VA_ARGS__)
 
-#define FD_ONLY_FIRST_BEFORE(Class, ...)                                                          \
-    namespace prism                                                                               \
-    {                                                                                             \
-    namespace reflection                                                                          \
-    {                                                                                             \
+#define FD_ONLY_FIRST_BEFORE(Class, ...)                                                           \
+    namespace prism                                                                                \
+    {                                                                                              \
+    namespace reflection                                                                           \
+    {                                                                                              \
     namespace privates                                                                             \
-    {                                                                                             \
-    template <>                                                                                   \
-    struct st_field_do<Class>                                                                     \
-    {                                                                                             \
-        template <int BIS = 0, class LAM>                                                         \
-        constexpr static bool run(Class& model, const char* fname, LAM&& lambda, int& level)      \
-        {                                                                                         \
-            ++level;                                                                              \
+    {                                                                                              \
+    template <>                                                                                    \
+    struct st_field_do<Class>                                                                      \
+    {                                                                                              \
+        template <int BIS = 0, class LAM>                                                          \
+        constexpr static bool run(Class& model, const char* fname, LAM&& lambda, int& level)       \
+        {                                                                                          \
+            ++level;                                                                               \
             using base_types = prism::reflection::privates::baseTypes<Class>::t;                   \
-            if constexpr (!std::is_same_v<base_types, void>)                                      \
-            {                                                                                     \
-                bool hited = false;                                                                   \
+            if constexpr (!std::is_same_v<base_types, void>)                                       \
+            {                                                                                      \
+                bool hited = false;                                                                \
                 prism::reflection::privates::for_each_bases<base_types>([&](auto* base_ptr_null) { \
-                    using b_t = std::remove_pointer_t<decltype(base_ptr_null)>;                   \
-                    b_t& baseRef = static_cast<b_t&>(model);                                      \
-                    hited = st_field_do<b_t>::template run<BIS>(baseRef, fname, lambda, level);   \
-                    --level;                                                                      \
-                    if (hited)                                                                    \
-                        return true;                                                              \
-                    return false;                                                                 \
-                });                                                                               \
-                if (hited)                                                                        \
-                    return true;                                                                  \
-            }                                                                                     \
-            switch (prism::utilities::const_hash(fname))                                            \
+                    using b_t = std::remove_pointer_t<decltype(base_ptr_null)>;                    \
+                    b_t& baseRef = static_cast<b_t&>(model);                                       \
+                    hited = st_field_do<b_t>::template run<BIS>(baseRef, fname, lambda, level);    \
+                    --level;                                                                       \
+                    if (hited)                                                                     \
+                        return true;                                                               \
+                    return false;                                                                  \
+                });                                                                                \
+                if (hited)                                                                         \
+                    return true;                                                                   \
+            }                                                                                      \
+            switch (prism::utilities::const_hash(fname))                                           \
             {
 
-#define FD_INSERT_ITM(Class, Field1)                                                                                                              \
-    case prism::utilities::const_hash(#Field1):                                                                                                     \
+#define FD_INSERT_ITM(Class, Field1)                                                                                                                  \
+    case prism::utilities::const_hash(#Field1):                                                                                                       \
         if constexpr (!prism::attributes::privates::is_field_ignore<Class, decltype(prism::utilities::getMT(&Class::Field1)), &Class::Field1, BIS>()) \
-        {                                                                                                                                         \
-            lambda(model.Field1);                                                                                                                 \
-            return true;                                                                                                                          \
-        }                                                                                                                                         \
+        {                                                                                                                                             \
+            lambda(model.Field1);                                                                                                                     \
+            return true;                                                                                                                              \
+        }                                                                                                                                             \
         break;
 
 #define FD_ONLY_FIRST_AFTER(Class, Field1, ...) \
@@ -623,51 +646,52 @@
     LEFT##n(Class, __VA_ARGS__)            \
         ONLY_LAST_AFTER(Class, __VA_ARGS__)
 
-#define ONLY_FIRST_BEFORE(Class, ...)                                      \
-    namespace prism                                                        \
-    {                                                                      \
-    namespace reflection                                                   \
-    {                                                                      \
-    namespace privates                                                      \
-    {                                                                      \
-    template <>                                                            \
-    struct st_visit_fields<Class>                                          \
-    {                                                                      \
-        template <int BIS, class Obj, class Vis>                           \
-        constexpr static void run(Obj&& model, Vis&& visitor)              \
+#define ONLY_FIRST_BEFORE(Class, ...)                         \
+    namespace prism                                           \
+    {                                                         \
+    namespace reflection                                      \
+    {                                                         \
+    namespace privates                                        \
+    {                                                         \
+    template <>                                               \
+    struct st_visit_fields<Class>                             \
+    {                                                         \
+        template <int BIS, class Obj, class Vis>              \
+        constexpr static void run(Obj&& model, Vis&& visitor) \
         {
-    #define INSERT_ITM(Class, Field1)                                                                                                             \
-        if constexpr (!prism::attributes::privates::is_field_ignore<Class, decltype(prism::utilities::getMT(&Class::Field1)), &Class::Field1, BIS>()) \
-            visitor(#Field1, model.Field1);
-    #define ONLY_LAST_AFTER(Class, Field1, ...)                                                   \
-        }                                                                                         \
-    };                                                                                            \
-    template <>                                                                                   \
-    struct st_for_each_fields<Class>                                                              \
-    {                                                                                             \
-        template <int BIS = 0, class LAM>                                                         \
-        constexpr static void run(Class& model, LAM&& lambda)                                     \
-        {                                                                                         \
+#define INSERT_ITM(Class, Field1)                                                                                                                 \
+    if constexpr (!prism::attributes::privates::is_field_ignore<Class, decltype(prism::utilities::getMT(&Class::Field1)), &Class::Field1, BIS>()) \
+        visitor(#Field1, model.Field1);
+#define ONLY_LAST_AFTER(Class, Field1, ...)                                                        \
+    }                                                                                              \
+    }                                                                                              \
+    ;                                                                                              \
+    template <>                                                                                    \
+    struct st_for_each_fields<Class>                                                               \
+    {                                                                                              \
+        template <int BIS = 0, class LAM>                                                          \
+        constexpr static void run(Class& model, LAM&& lambda)                                      \
+        {                                                                                          \
             using base_types = prism::reflection::privates::baseTypes<Class>::t;                   \
-            if constexpr (!std::is_same_v<base_types, void>)                                      \
-            {                                                                                     \
+            if constexpr (!std::is_same_v<base_types, void>)                                       \
+            {                                                                                      \
                 prism::reflection::privates::for_each_bases<base_types>([&](auto* base_ptr_null) { \
-                    using b_t = std::remove_pointer_t<decltype(base_ptr_null)>;                   \
-                    b_t& baseRef = static_cast<b_t&>(model);                                      \
-                    prism::reflection::for_each_fields<BIS>(baseRef, lambda);                     \
-                    return false;                                                                 \
-                });                                                                               \
-            }                                                                                     \
-            st_visit_fields<Class>::run<BIS>(std::move(model), std::move(lambda));                \
-        }                                                                                         \
-    };                                                                                            \
-    }                                                                                             \
-    template <>                                                                                   \
-    constexpr bool has_md<Class>()                                                                \
-    {                                                                                             \
-        return true;                                                                              \
-    }                                                                                             \
-    }                                                                                             \
+                    using b_t = std::remove_pointer_t<decltype(base_ptr_null)>;                    \
+                    b_t& baseRef = static_cast<b_t&>(model);                                       \
+                    prism::reflection::for_each_fields<BIS>(baseRef, lambda);                      \
+                    return false;                                                                  \
+                });                                                                                \
+            }                                                                                      \
+            st_visit_fields<Class>::run<BIS>(std::move(model), std::move(lambda));                 \
+        }                                                                                          \
+    };                                                                                             \
+    }                                                                                              \
+    template <>                                                                                    \
+    constexpr bool has_md<Class>()                                                                 \
+    {                                                                                              \
+        return true;                                                                               \
+    }                                                                                              \
+    }                                                                                              \
     }
 
 // base type
@@ -676,7 +700,7 @@
     {                                                           \
     namespace reflection                                        \
     {                                                           \
-    namespace privates                                           \
+    namespace privates                                          \
     {                                                           \
     template <>                                                 \
     struct baseTypes<Class>                                     \
@@ -729,7 +753,7 @@ struct compareCharPointers
         return false;
     }
 };
-} // namespace Enum
+} // namespace enums
 
 namespace attributes
 {
@@ -839,9 +863,10 @@ constexpr static inline bool for_each_bases(F&& lam)
     return typeListVisitor<Sequence>::template run(lam);
 }
 
-
-template<class T>
-struct st_visit_fields{};
+template <class T>
+struct st_visit_fields
+{
+};
 
 template <class T>
 struct st_field_do
@@ -896,7 +921,7 @@ std::enable_if_t<has_md<T>(), void> copy(T& left, T& right)
     });
 }
 
-} // namespace reflections
+} // namespace reflection
 
 namespace utilities
 {
@@ -917,7 +942,7 @@ unsigned constexpr inline const_hash(char const* input)
 }
 
 template <class T, class M>
-constexpr static M getT(M T::*)
+constexpr static T getT(M T::*)
 {
     return *(T*)0;
 }
