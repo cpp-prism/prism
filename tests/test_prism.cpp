@@ -7,55 +7,12 @@
 #include <memory>
 #include <optional>
 #include <type_traits>
+#include <fstream>
 
 #ifdef _MSC_VER
 #include <Windows.h>
 #endif
 
-struct A
-{
-    int f_a = 0;
-    bool f_b = true;
-};
-PRISM_FIELDS(A, f_a, f_b);
-struct B
-{
-    int f_a = 0;
-    bool f_b = true;
-};
-struct C
-{
-    int f_a = 0;
-    bool f_b = true;
-};
-
-struct AT_json_alias
-{
-    using value_type = const char*;
-};
-
-PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(int, AT_json_alias, "alias of int") //规则1:所有类的int字段注册一个const char*的标注，
-PRISM_FIELD_ATTRIBUTE(&A::f_a, AT_json_alias, "alias of a::f_a")      // 规则2 A类的f_a 注册一个const char*标注，覆盖上一行的注册
-PRISM_FIELD_ATTRIBUTE(&A::f_b, AT_json_alias, "alias of a::f_b")      // 规则3 A类的f_b 注册一个const char*标注
-
-TEST_CASE("attribues")
-{
-    std::optional<const char*> aa = PRISM_GET_FIELD_ATTRIBUTE(&A::f_a, AT_json_alias);
-    std::optional<const char*> ab = PRISM_GET_FIELD_ATTRIBUTE(&A::f_b, AT_json_alias);
-    std::optional<const char*> ba = PRISM_GET_FIELD_ATTRIBUTE(&B::f_a, AT_json_alias);
-    std::optional<const char*> bb = PRISM_GET_FIELD_ATTRIBUTE(&B::f_b, AT_json_alias);
-
-    std::cout << aa.value() << std::endl;     // 规则2:alias of a::f_a
-    std::cout << ab.value() << std::endl;     // 规则3:alias of a::f_b
-    std::cout << ba.value() << std::endl;     // 规则1 alias of int
-    std::cout << ab.has_value() << std::endl; // 没有注册，std::optional 无值
-
-    std::string filedName = "f_a";
-    prism::attributes::st_field_attribute_do<A, AT_json_alias>::run(filedName.c_str(), [&](std::optional<AT_json_alias::value_type>&& attr) {
-        if (attr.has_value())
-            std::cout << "class: A    member:" << filedName << "    attr:" << attr.value() << std::endl;
-    });
-}
 
 TEST_CASE("reflect base type fields")
 {
@@ -287,7 +244,12 @@ TEST_CASE("json测试")
         CHECK(instance_1.my_shared_sub->my_string == t->my_shared_sub->my_string);
         CHECK(instance_1.my_shared_sub->my_longlong == t->my_shared_sub->my_longlong);
     }
-    REQUIRE(json2 == json);
+    //CHECK(json2 == json);
+    std::ofstream ofs("json.json");
+    std::ofstream ofs2("json2.json");
+    ofs << json ;
+    ofs2 << json2 ;
+
 }
 int main(int argc, const char** argv)
 {

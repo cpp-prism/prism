@@ -182,11 +182,16 @@ template <class T>
 struct jsonObject<T, std::enable_if_t<prism::reflection::has_md<T>(), void>> : public jsonObjectBase<jsonObject<T>>
 {
     using jsonObjectBase<jsonObject<T>>::append_value;
+    using jsonObjectBase<jsonObject<T>>::alias_map_;
 
     constexpr static void append_sub_kvs([[maybe_unused]] std::ostringstream& stream, [[maybe_unused]] const char* fname, [[maybe_unused]] T&& value, [[maybe_unused]] int identation, [[maybe_unused]] int&& level)
     {
         int count = 0;
         prism::reflection::for_each_fields<prism::utilities::const_hash("json")>(value, [&](const char* ffname, auto&& value_) {
+            std::optional<const char*> attr = prism::attributes::getFieldAttr<T,::prism::attributes::Attr_json_alias>(ffname);
+            std::string alias = ffname;
+            if(attr.has_value())
+                alias = attr.value();
             if (count)
             {
                 stream << ',';
@@ -199,7 +204,7 @@ struct jsonObject<T, std::enable_if_t<prism::reflection::has_md<T>(), void>> : p
                     stream << " ";
             }
             using v_t = std::remove_reference_t<std::remove_reference_t<decltype(value_)>>;
-            jsonType<v_t>::type::append_key_value(stream, ffname, std::move(value_), identation, std::move(level));
+            jsonType<v_t>::type::append_key_value(stream, alias.c_str(), std::move(value_), identation, std::move(level));
 
             ++count;
         });
@@ -208,7 +213,20 @@ struct jsonObject<T, std::enable_if_t<prism::reflection::has_md<T>(), void>> : p
     static void read_sub_kv([[maybe_unused]] T&& model, [[maybe_unused]] std::string_view&& str, [[maybe_unused]] int kstart, [[maybe_unused]] int kend, [[maybe_unused]] int vstart, [[maybe_unused]] int vend)
     {
         auto s = std::string(str.substr(kstart, kend - kstart));
-        prism::reflection::field_do<prism::utilities::const_hash("json")>(model, s.c_str(), [&](auto&& value) {
+
+        if(!alias_map_.size())
+        {
+            prism::reflection::for_each_fields<prism::utilities::const_hash("json")>(model, [&](const char* fname ,[[maybe_unused]]auto&& value) {
+                std::optional<const char*> attr = prism::attributes::getFieldAttr<T,::prism::attributes::Attr_json_alias>(fname);
+                std::string alias = fname;
+                if(attr.has_value())
+                    alias = attr.value();
+                alias_map_[alias] = fname;
+            });
+        }
+        std::string alias = alias_map_[s];
+
+        prism::reflection::field_do<prism::utilities::const_hash("json")>(model, alias.c_str(), [&](auto&& value) {
             using ft_ = std::remove_reference_t<std::remove_reference_t<decltype(value)>>;
             jsonType<ft_>::type::from_jsonStr(std::move(value), std::move(str), vstart, vend);
         });
@@ -750,6 +768,8 @@ struct jsonArrayBase : public jsonValueBase<jsonArrayBase<derived>>
 template <class derived>
 struct jsonObjectBase : public jsonValueBase<jsonObjectBase<derived>>
 {
+    static inline std::map<std::string,std::string> alias_map_;
+
     template <class T>
     constexpr static void append_sub_kvs([[maybe_unused]] std::ostringstream& stream, [[maybe_unused]] const char* fname, [[maybe_unused]] T&& value, [[maybe_unused]] int identation, [[maybe_unused]] int&& level)
     {

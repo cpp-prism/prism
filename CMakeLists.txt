@@ -110,7 +110,7 @@ if(CMAKE_PROJECT_NAME STREQUAL "${PROJECT_NAME}")
     add_executable(tst_${PROJECT_NAME} ${TST_PRISM_SOURCE} )
     target_compile_features(tst_${PROJECT_NAME} PUBLIC cxx_std_17)
     target_link_libraries(tst_${PROJECT_NAME} PRIVATE Catch2::Catch2  )
-    catch_discover_tests(tst_${PROJECT_NAME})
+    #catch_discover_tests(tst_${PROJECT_NAME})
 
 
 

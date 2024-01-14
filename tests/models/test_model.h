@@ -86,6 +86,13 @@ struct tst_struct
 // PRISM_IGNORE_JSON_FIELD(tst_struct,my_timestamp)
 // PRISM_IGNORE_JSON_FIELD(tst_struct,my_int)
 
+/**
+ *  json alias  attribute test
+ */
+PRISM_FIELD_ATTRIBUTE(&tst_struct::my_int,
+                      prism::attributes::Attr_json_alias,
+                      "MY_INT1")
+
 PRISM_FIELDS(tst_struct, my_int, my_bool, my_float, my_double, my_longlong, my_string, my_opt_str, my_opt_int, my_ptr_int, my_sptr_int, my_opt_ptr, my_map, my_map2, my_unordermap, my_vec_sp, my_list_sp, my_list_int, my_list_std_string, my_shared_self, my_shared_sub, my_datetime, my_timestamp, lang)
 
 struct Base1

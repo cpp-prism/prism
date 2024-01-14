@@ -289,6 +289,8 @@
     {                                                              \
     namespace attributes                                           \
     {                                                              \
+    namespace privates                                             \
+    {                                                              \
     template <class AT>                                            \
     struct st_field_attribute_do<Class, AT>                        \
     {                                                              \
@@ -308,6 +310,7 @@
     }                                           \
     }                                           \
     ;                                           \
+    }                                           \
     }                                           \
     }
 
@@ -763,6 +766,10 @@ struct compareCharPointers
 namespace attributes
 {
 
+struct Attr_json_alias{
+    using value_type= const char*;
+};
+
 namespace privates
 {
 template <class T, class M, M T::*fn, int>
@@ -786,14 +793,25 @@ struct field_attribute
     }
 };
 
-} // namespace privates
-
 template <class T, class AT>
 struct st_field_attribute_do
 {
     template <class LAM>
     constexpr static void run(const char* fname, LAM&& lambda) = delete;
 };
+
+} // namespace privates
+
+
+template <class T,class AT>
+constexpr static inline typename std::optional<typename AT::value_type> getFieldAttr(const char* fname)
+{
+    std::optional<typename AT::value_type> result = std::nullopt;
+    prism::attributes::privates::st_field_attribute_do<T, AT>::run(fname, [&](std::optional<typename AT::value_type>&& attr) {
+        result = attr;
+    });
+    return result;
+}
 
 } // namespace attributes
 
