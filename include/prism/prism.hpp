@@ -84,13 +84,8 @@
 
 // ATTRIBUTE
 
-#define PRISM_GET_FIELD_ATTRIBUTE(memberFucPtr, AttributeName)                                                                \
-    ::prism::attributes::privates::field_attribute<decltype(prism::utilities::getT(std::declval<decltype(memberFucPtr)>())),  \
-                                                   decltype(prism::utilities::getMT(std::declval<decltype(memberFucPtr)>())), \
-                                                   memberFucPtr,                                                              \
-                                                   AttributeName>::value();
 
-#define PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(FieldType, AttributeName, DefalutValue) \
+#define PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(AttributeName, FieldType, DefalutValue) \
     namespace prism                                                               \
     {                                                                             \
     namespace attributes                                                          \
@@ -109,7 +104,7 @@
     }                                                                             \
     }
 
-#define PRISM_FIELD_ATTRIBUTE(memberFucPtr, AttributeName, DefalutValue)                              \
+#define PRISM_FIELD_ATTRIBUTE(AttributeName, memberFucPtr, DefalutValue)                              \
     namespace prism                                                                                   \
     {                                                                                                 \
     namespace attributes                                                                              \
@@ -130,6 +125,38 @@
     }                                                                                                 \
     }                                                                                                 \
     }
+
+#define PRISM_GET_FIELD_ATTRIBUTE(memberFucPtr, AttributeName)                                                                \
+    ::prism::attributes::privates::field_attribute<decltype(prism::utilities::getT(std::declval<decltype(memberFucPtr)>())),  \
+                                                   decltype(prism::utilities::getMT(std::declval<decltype(memberFucPtr)>())), \
+                                                   memberFucPtr,                                                              \
+                                                   AttributeName>::value();
+
+
+#define PRISM_CLASS_ATTRIBUTE(AttributeName, Class, DefalutValue)                                     \
+    namespace prism                                                                                   \
+    {                                                                                                 \
+    namespace attributes                                                                              \
+    {                                                                                                 \
+    namespace privates                                                                                \
+    {                                                                                                 \
+    template <>                                                                                       \
+    struct class_attribute<Class,AttributeName>                                                       \
+    {                                                                                                 \
+        constexpr static std::stdoptional<AttributeName::value_type> value()                          \
+        {                                                                                             \
+            return DefalutValue;                                                                      \
+        }                                                                                             \
+    };                                                                                                \
+    }                                                                                                 \
+    }                                                                                                 \
+    }
+
+#define PRISM_GET_CLASS_ATTRIBUTE(Class, AttributeName) ::prism::attributes::privates::class_attribute<Class,AttributeName>::value();
+
+
+
+
 
 #define PRISM_IGNORE_FIELD(Class, Field, Business)                                                                                                           \
     namespace prism                                                                                                                                          \
@@ -766,9 +793,6 @@ struct compareCharPointers
 namespace attributes
 {
 
-struct Attr_json_alias{
-    using value_type= const char*;
-};
 
 namespace privates
 {
@@ -781,7 +805,10 @@ constexpr inline bool is_field_ignore()
 template <class T, class AT>
 struct class_attribute
 {
-    constexpr inline std::stdoptional<typename AT::value_type> value();
+    constexpr static inline std::stdoptional<typename AT::value_type> value()
+    {
+        return std::nullopt;
+    }
 };
 // attributes of field
 template <class T, class M, M T::*fn, class AT>
@@ -811,6 +838,12 @@ constexpr static inline typename std::optional<typename AT::value_type> getField
         result = attr;
     });
     return result;
+}
+
+template <class T,class AT>
+constexpr static inline typename std::optional<typename AT::value_type> getClassAttr()
+{
+    return privates::class_attribute<T,AT>::value();
 }
 
 } // namespace attributes

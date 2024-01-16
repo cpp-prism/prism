@@ -25,6 +25,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(HEADERS
     include/prism/prism.hpp
     include/prism/prismJson.hpp
+    include/prism/prismSql.hpp
     include/prism/utilities/typeName.hpp
     )
 
@@ -100,7 +101,7 @@ endif()
 # test
 
 if(CMAKE_PROJECT_NAME STREQUAL "${PROJECT_NAME}")
-
+    find_package(unofficial-sqlite3 CONFIG REQUIRED)
     find_package(Catch2 REQUIRED)
     include(CTest)
     include(Catch)
@@ -109,7 +110,7 @@ if(CMAKE_PROJECT_NAME STREQUAL "${PROJECT_NAME}")
     set(TST_PRISM_SOURCE tests/test_prism.cpp tests/models/test_model.h)
     add_executable(tst_${PROJECT_NAME} ${TST_PRISM_SOURCE} )
     target_compile_features(tst_${PROJECT_NAME} PUBLIC cxx_std_17)
-    target_link_libraries(tst_${PROJECT_NAME} PRIVATE Catch2::Catch2  )
+    target_link_libraries(tst_${PROJECT_NAME} PRIVATE Catch2::Catch2  unofficial::sqlite3::sqlite3)
     #catch_discover_tests(tst_${PROJECT_NAME})
 
 

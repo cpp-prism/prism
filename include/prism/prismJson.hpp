@@ -44,6 +44,14 @@ namespace prism
 namespace json
 {
 
+namespace attributes
+{
+struct Attr_json_alias{
+    using value_type= const char*;
+};
+
+} //namespace attributes
+
 namespace privates
 {
 constexpr inline static const char* WHITESPACE = " \r\n\t\0";
@@ -188,7 +196,7 @@ struct jsonObject<T, std::enable_if_t<prism::reflection::has_md<T>(), void>> : p
     {
         int count = 0;
         prism::reflection::for_each_fields<prism::utilities::const_hash("json")>(value, [&](const char* ffname, auto&& value_) {
-            std::optional<const char*> attr = prism::attributes::getFieldAttr<T,::prism::attributes::Attr_json_alias>(ffname);
+            std::optional<const char*> attr = prism::attributes::getFieldAttr<T,::prism::json::attributes::Attr_json_alias>(ffname);
             std::string alias = ffname;
             if(attr.has_value())
                 alias = attr.value();
@@ -217,7 +225,7 @@ struct jsonObject<T, std::enable_if_t<prism::reflection::has_md<T>(), void>> : p
         if(!alias_map_.size())
         {
             prism::reflection::for_each_fields<prism::utilities::const_hash("json")>(model, [&](const char* fname ,[[maybe_unused]]auto&& value) {
-                std::optional<const char*> attr = prism::attributes::getFieldAttr<T,::prism::attributes::Attr_json_alias>(fname);
+                std::optional<const char*> attr = prism::attributes::getFieldAttr<T,::prism::json::attributes::Attr_json_alias>(fname);
                 std::string alias = fname;
                 if(attr.has_value())
                     alias = attr.value();
