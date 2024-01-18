@@ -21,11 +21,11 @@
 
 struct database_table
 {
-    int id;
-    std::string  guid;
-    bool  myBool;
-    float myFloat;
-    double myDouble;
+    int id = 1;
+    std::string  guid = "2";
+    bool  myBool = true;
+    float myFloat = 4.1;
+    double myDouble = 5.230;
 };
 
 PRISM_FIELDS(database_table,id,guid,myBool,myFloat,myDouble);
@@ -44,6 +44,24 @@ PRISM_FIELD_ATTRIBUTE(prism::sql::sqlite3::attributes::Attr_sql_field_datatype ,
 
 TEST_CASE("test prism")
 {
+    SECTION("test sqlite insert single table  ")
+    {
+        std::vector<std::shared_ptr<database_table>> models{
+            std::make_shared<database_table>(),
+            std::make_shared<database_table>(),
+            std::make_shared<database_table>()
+        };
+
+        std::string sql = prism::sql::Sql<prism::sql::sqlite3::Sqlite3>::insert<database_table>(models);
+        std::cout << "============================================="  << std::endl;
+        std::cout << "insert sql"  << std::endl;
+        std::cout << "============================================="  << std::endl;
+        std::cout << sql << std::endl;
+
+    }
+
+    SKIP();
+
     SECTION("test sqlite query single table  ")
     {
         std::string sql = prism::sql::Sql<prism::sql::sqlite3::Sqlite3>::queryTable<database_table>();

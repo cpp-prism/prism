@@ -4,6 +4,7 @@
 #include "prism.hpp"
 #include <string>
 #include <set>
+#include <sstream>
 
 
 
@@ -65,6 +66,12 @@ struct Sql
     {
         return derived::template queryTable<T>(where);
     }
+
+    template<class T>
+    static inline std::string insert(std::vector<std::shared_ptr<T>> models)
+    {
+        return derived::template insert(models);
+    }
 };
 
 namespace sqlite3
@@ -79,9 +86,18 @@ struct Attr_sql_field_datatype{
 struct Sqlite3:public Sql<Sqlite3>
 {
     template<class T>
-    static inline std::string queryTable(const char* where = nullptr)
+    static inline std::string insert(std::vector<std::shared_ptr<T>> models)
     {
-        std::string sql = "SELECT ";
+        std::stringstream sql;
+        sql << "INSERT INTO ";
+        std::optional<const char*> tableName = prism::attributes::getClassAttr<T,sql::attributes::Attr_sql_class_alias>();
+        if(tableName.has_value())
+            sql << tableName.value();
+        else
+            sql << prism::utilities::typeName<T>::value;
+
+        sql << "\n(";
+
         bool isfirst = true;
         prism::reflection::for_each_fields(*(T*)nullptr,[&](const char* fname, [[maybe_unused]]auto&&value){
             std::optional<bool> ignore = prism::attributes::getFieldAttr<T,sql::attributes::Attr_sql_field_ignore>(fname);
@@ -89,48 +105,119 @@ struct Sqlite3:public Sql<Sqlite3>
                 return;
 
             if(!isfirst)
-                sql += ", ";
+                sql << ", ";
             else
                 isfirst = false;
 
             std::optional<const char* > alias = prism::attributes::getFieldAttr<T,sql::attributes::Attr_sql_field_alias>(fname);
             if(alias.has_value())
-                sql += alias.value();
+                sql << alias.value();
             else
-                sql += fname;
+                sql << fname;
 
         });
 
-        sql+= " FROM " ;
+        sql << ") VALUES \n" ;
+
+        bool isModelfirst = true;
+        for(std::shared_ptr<T> item : models)
+        {
+            if(!isModelfirst)
+                sql << ",\n";
+            else
+                isModelfirst = false;
+            sql << "(" ;
+
+            isfirst = true;
+            prism::reflection::for_each_fields(*item,[&](const char* fname, [[maybe_unused]]auto&&value){
+                std::optional<bool> ignore = prism::attributes::getFieldAttr<T,sql::attributes::Attr_sql_field_ignore>(fname);
+                if(ignore.has_value() && ignore)
+                    return;
+
+                if(!isfirst)
+                    sql << ", ";
+                else
+                    isfirst = false;
+
+
+                std::optional<const char* > datatype = prism::attributes::getFieldAttr<T,sql::sqlite3::attributes::Attr_sql_field_datatype>(fname);
+                using v_t = std::decay_t<std::decay_t<decltype(value)>>;
+                if (std::is_same_v<bool,v_t>)
+                {
+                    sql << std::boolalpha << value;
+                }
+                else if(!std::strcmp(datatype.value() , "TEXT"))
+                {
+                    sql << "\"" << value << "\"";
+                }
+                else
+                    sql << value;
+
+
+            });
+            sql << ")" ;
+        }
+
+        sql << ";";
+
+        return sql.str();
+    }
+
+    template<class T>
+    static inline std::string queryTable(const char* where = nullptr)
+    {
+        std::stringstream sql;
+        sql << "SELECT ";
+        bool isfirst = true;
+        prism::reflection::for_each_fields(*(T*)nullptr,[&](const char* fname, [[maybe_unused]]auto&&value){
+            std::optional<bool> ignore = prism::attributes::getFieldAttr<T,sql::attributes::Attr_sql_field_ignore>(fname);
+            if(ignore.has_value() && ignore)
+                return;
+
+            if(!isfirst)
+                sql << ", ";
+            else
+                isfirst = false;
+
+            std::optional<const char* > alias = prism::attributes::getFieldAttr<T,sql::attributes::Attr_sql_field_alias>(fname);
+            if(alias.has_value())
+                sql << alias.value();
+            else
+                sql << fname;
+
+        });
+
+        sql << " FROM " ;
 
         std::optional<const char*> tableName = prism::attributes::getClassAttr<T,sql::attributes::Attr_sql_class_alias>();
         if(tableName.has_value())
-            sql += tableName.value();
+            sql << tableName.value();
         else
-            sql += prism::utilities::typeName<T>::value;
+            sql << prism::utilities::typeName<T>::value;
 
         if(where)
         {
-            sql += " ";
-            sql += where;
+            sql << " ";
+            sql << where;
         }
 
-        sql += ";";
+        sql << ";";
 
-        return sql;
+        return sql.str();
     }
 
     template<class T>
     static inline std::string createTable()
     {
-        std::string sql = "CREATE TABLE IF NOT EXISTS ";
+        std::stringstream sql;
+        sql << "CREATE TABLE IF NOT EXISTS ";
         std::optional<const char*> tableName = prism::attributes::getClassAttr<T,sql::attributes::Attr_sql_class_alias>();
         if(tableName.has_value())
-            sql += tableName.value();
+            sql << tableName.value();
         else
-            sql += prism::utilities::typeName<T>::value;
+            sql << prism::utilities::typeName<T>::value;
 
-        sql += " (\n";
+        sql << " (\n";
 
         std::vector<std::string> primaryKeys;
         prism::reflection::for_each_fields(*((T*)nullptr),[&](const char* fname, [[maybe_unused]]auto&& value){
@@ -158,38 +245,38 @@ struct Sqlite3:public Sql<Sqlite3>
 
             std::optional<const char* > alias = prism::attributes::getFieldAttr<T,sql::attributes::Attr_sql_field_alias>(fname);
             if(alias.has_value())
-                sql += alias.value();
+                sql << alias.value();
             else
-                sql += fname;
-            sql += " ";
+                sql << fname;
+            sql << " ";
 
 
             std::optional<const char* > datatype = prism::attributes::getFieldAttr<T,sql::sqlite3::attributes::Attr_sql_field_datatype>(fname);
             if(datatype.has_value())
             {
-                sql += datatype.value();
+                sql << datatype.value();
             }
 
             if(!isfirst)
-                sql += ", \n";
+                sql << ", \n";
 
         });
 
-        sql += "PRIMARY KEY(";
+        sql << "PRIMARY KEY(";
         isfirst = true;
         for(std::string fn: primaryKeys)
         {
             if(isfirst)
                 isfirst = false;
             else
-                sql += ", ";
+                sql << ", ";
 
-            sql += fn;
+            sql << fn;
 
         }
-        sql += ")\n);";
+        sql << ")\n);";
 
-       return sql;
+       return sql.str();
     }
 };
 } //namespace sqlite3
@@ -205,7 +292,7 @@ PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_fi
 PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_field_datatype , double        , "REAL")
 PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_field_datatype , float         , "REAL")
 PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_field_datatype , std::string   , "TEXT")
-PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_field_datatype , const char*   , "Text")
+PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_field_datatype , const char*   , "TEXT")
 PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_field_datatype , bool          , "INTEGER") //0 or 1
 
 #endif // PRISM_PRISMSQL_HPP
