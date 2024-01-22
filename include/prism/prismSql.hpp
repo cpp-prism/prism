@@ -29,9 +29,6 @@ struct Attr_sql_field_isPrimaryKey{
     using value_type= bool;
 };
 
-struct Attr_sql_field_isCombinIndex{
-    using value_type= bool;
-};
 
 
 struct Attr_sql_field_alias{
@@ -242,6 +239,9 @@ struct Sqlite3:public Sql<Sqlite3>
 
             if(isfirst)
                 isfirst = false;
+            else
+                sql << ", \n";
+
 
             std::optional<const char* > alias = prism::attributes::getFieldAttr<T,sql::attributes::Attr_sql_field_alias>(fname);
             if(alias.has_value())
@@ -257,24 +257,26 @@ struct Sqlite3:public Sql<Sqlite3>
                 sql << datatype.value();
             }
 
-            if(!isfirst)
-                sql << ", \n";
 
         });
 
-        sql << "PRIMARY KEY(";
-        isfirst = true;
-        for(std::string fn: primaryKeys)
+        if(primaryKeys.size())
         {
-            if(isfirst)
-                isfirst = false;
-            else
-                sql << ", ";
+            sql << ",\nPRIMARY KEY(";
+            isfirst = true;
+            for(std::string fn: primaryKeys)
+            {
+                if(isfirst)
+                    isfirst = false;
+                else
+                    sql << ", ";
 
-            sql << fn;
+                sql << fn;
 
+            }
+            sql << ")\n";
         }
-        sql << ")\n);";
+        sql << ");";
 
        return sql.str();
     }
