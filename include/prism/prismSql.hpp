@@ -138,6 +138,12 @@ struct Sqlite3:public Sql<Sqlite3>
 
 
                 std::optional<const char* > datatype = prism::attributes::getFieldAttr<T,sql::sqlite3::attributes::Attr_sql_field_datatype>(fname);
+                if(!datatype.has_value())
+                {
+                    std::string msg = std::string("field:") + fname +" hadn't config sql datatype";
+                    std::cout << msg << std::endl;
+                }
+
                 using v_t = std::decay_t<std::decay_t<decltype(value)>>;
                 if (std::is_same_v<bool,v_t>)
                 {
@@ -290,6 +296,7 @@ struct Sqlite3:public Sql<Sqlite3>
 } //namespace prism
 
 PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_field_datatype , int           , "INTEGER")
+PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_field_datatype , long          , "INTEGER")
 PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_field_datatype , long long     , "INTEGER")
 PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_field_datatype , double        , "REAL")
 PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_field_datatype , float         , "REAL")
