@@ -184,8 +184,7 @@ struct jsonArray<T, std::enable_if_t<prism::utilities::is_specialization<T, std:
     {
         using ft_ = typename T::value_type;
         model.emplace_back();
-        ft_& v = model.back();
-        jsonType<ft_>::type::from_jsonStr(std::move(v), std::move(str), start, end);
+        jsonType<ft_>::type::from_jsonStr(std::move(model.back()), std::move(str), start, end);
     }
 };
 //=================== ================= json object ================= ==================
