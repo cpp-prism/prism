@@ -53,6 +53,12 @@ template<class derived>
 struct Sql
 {
     template<class T>
+    static inline std::string deleteTable()
+    {
+        return derived::template deleteTable<T>();
+    }
+
+    template<class T>
     static inline std::string createTable()
     {
         return derived::template createTable<T>();
@@ -82,6 +88,23 @@ struct Attr_sql_field_datatype{
 } //namespace attributes
 struct Sqlite3:public Sql<Sqlite3>
 {
+    template<class T>
+    static inline std::string deleteTable()
+    {
+        std::stringstream sql;
+        sql << "DROP ";
+        std::optional<const char*> tableName = prism::attributes::getClassAttr<T,sql::attributes::Attr_sql_class_alias>();
+        if(tableName.has_value())
+            sql << tableName.value();
+        else
+            sql << prism::utilities::typeName<T>::value;
+
+
+        sql << " IF EXISTS;";
+
+        return sql.str();
+    }
+
     template<class T>
     static inline std::string insert(std::vector<std::shared_ptr<T>> models)
     {
