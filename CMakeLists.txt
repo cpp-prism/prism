@@ -20,6 +20,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #add_subdirectory(components/prism_qt_ui)
 
 
+option(VCPKG_DISABLE_TEST "disable run test when vcpkg install " ON)
 
 #
 set(HEADERS
@@ -100,7 +101,7 @@ endif()
 
 # test
 
-if(CMAKE_PROJECT_NAME STREQUAL "${PROJECT_NAME}")
+if(CMAKE_PROJECT_NAME STREQUAL "${PROJECT_NAME}" AND NOT VCPKG_DISABLE_TEST)
     find_package(unofficial-sqlite3 CONFIG REQUIRED)
     find_package(Catch2 REQUIRED)
     include(CTest)
