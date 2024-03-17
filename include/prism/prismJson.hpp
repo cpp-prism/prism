@@ -96,13 +96,9 @@ static std::enable_if_t<std::is_same_v<float, T> || std::is_same_v<double, T>, s
         while (true)
         {
             size_t zeroPos = str.find_last_of('0');
-            if (zeroPos != std::string::npos && zeroPos > dotPos)
+            if (str.back() == '.' || (zeroPos > dotPos && str.back() == '0'))
             {
-                str.erase(zeroPos); // 去掉小数点后的尾随零
-                if (str.back() == '.')
-                {
-                    str.pop_back(); // 如果整个小数部分都是零，去掉小数点
-                }
+                str.pop_back(); // 如果整个小数部分都是零，去掉小数点
             }
             else
                 break;
