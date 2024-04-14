@@ -1,6 +1,10 @@
 #ifndef PRISM_PRISM_H
 #define PRISM_PRISM_H
 
+#ifndef PRISM_EXPORT
+#define PRISM_EXPORT
+#endif
+
 #include "utilities/typeName.hpp"
 #include <cstring>
 #include <iostream>
@@ -702,7 +706,7 @@
     }                                                                                              \
     ;                                                                                              \
     template <>                                                                                    \
-    struct st_for_each_fields<Class>                                                               \
+    struct  st_for_each_fields<Class>                                                               \
     {                                                                                              \
         template <int BIS = 0, class LAM>                                                          \
         constexpr static void run(Class& model, LAM&& lambda)                                      \
@@ -1008,5 +1012,7 @@ struct has_def
 } // namespace utilities
 
 } // namespace prism
+
+#undef PRISM_EXPORT
 
 #endif // PRISM_PRISM_H

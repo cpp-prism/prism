@@ -45,8 +45,8 @@ struct typeName
         size_t target_len = (fullname_intern().size() - dummy_len) / multiple;
         std::stdstring_view rv = fullname_intern().substr(prefix_len, target_len);
 
-        if (rv.rfind(' ') == rv.npos)
-            return rv;
+        //if (rv.rfind(' ') == rv.npos)
+        //    return rv;
         return rv.substr(rv.rfind(' ') + 1);
     }
 
