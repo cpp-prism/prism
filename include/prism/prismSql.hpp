@@ -276,7 +276,28 @@ struct Sqlite3:public Sql<Sqlite3>
             if(alias.has_value())
                 sql << alias.value();
             else
+            {
+                //todo: base type's field attributes
+                //
+                //bool hited = false;
+                //using base_types = prism::reflection::privates::baseTypes<T>::t;
+                //if constexpr (!std::is_same_v<base_types, void>)
+                //{
+                //    prism::reflection::privates::for_each_bases<base_types>([&](auto* base_ptr_null) {
+                //        if(hited)
+                //            return true;
+                //        using b_t = std::remove_pointer_t<decltype(base_ptr_null)>;
+                //        std::optional<const char* > alias = prism::attributes::getFieldAttr<b_t,sql::attributes::Attr_sql_field_alias>(fname);
+                //        if(alias.has_value())
+                //        {
+                //            sql << alias.value();
+                //            hited = true;
+                //        }
+                //    });
+                //}
+                //if(!hited)
                 sql << fname;
+            }
             sql << " ";
 
 
