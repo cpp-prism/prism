@@ -1006,15 +1006,15 @@ static inline std::string toJsonString(T& model, int identation = 0)
 }
 
 template <class T>
-static inline std::shared_ptr<T> fromJsonString(const std::string&& str)
+static inline std::unique_ptr<T> fromJsonString(const std::string&& str)
 {
-    std::shared_ptr<T> model = std::make_shared<T>();
+    std::unique_ptr<T> model = std::make_unique<T>();
     privates::jsonType<T>::type::from_jsonStr(std::move(*model), std::move(str), 0, static_cast<int>(str.length() - 1));
 
     return model;
 }
 template <class T>
-static inline std::shared_ptr<T> fromJsonString(const std::string& str)
+static inline std::unique_ptr<T> fromJsonString(const std::string& str)
 {
     return fromJsonString<T>(std::move(str));
 }

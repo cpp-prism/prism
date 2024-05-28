@@ -101,7 +101,6 @@ endif()
 
 # test
 
-if(CMAKE_PROJECT_NAME STREQUAL "${PROJECT_NAME}" AND NOT VCPKG_DISABLE_TEST)
     find_package(unofficial-sqlite3 CONFIG REQUIRED)
     find_package(Catch2 REQUIRED)
     include(CTest)
@@ -116,7 +115,6 @@ if(CMAKE_PROJECT_NAME STREQUAL "${PROJECT_NAME}" AND NOT VCPKG_DISABLE_TEST)
 
 
 
-endif()
 
 #execute_process(COMMAND ${CMAKE_COMMAND} -E echo "
 #----------
