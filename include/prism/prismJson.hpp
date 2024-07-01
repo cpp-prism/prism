@@ -870,34 +870,35 @@ struct jsonObjectBase : public jsonValueBase<jsonObjectBase<derived>>
                         value_Idx_end = pre_valid_char_idx;
                         if (c == ',')
                             comma_idx = i;
-                        if (c == ',')
-                            comma_idx = i;
-                        if constexpr (prism::reflection::has_md<T>())
+                        using T_pt = std::remove_reference_t<std::remove_reference_t<T>> ;
+                        //std::cout << prism::utilities::typeName<T_pt>::value << " has MD: " << std::boolalpha <<  prism::reflection::has_md<T_pt>() << std::endl;
+                        if constexpr (prism::reflection::has_md<T_pt>())
                         {
                             derived::read_sub_kv(std::move(model), std::move(str), key_idx_start, key_idx_end, value_Idx_start, value_Idx_end);
                         }
-                        else if constexpr (prism::utilities::is_specialization<T, std::map>::value ||
-                                           prism::utilities::is_specialization<T, std::unordered_map>::value)
+                        else if constexpr (prism::utilities::is_specialization<T_pt, std::map>::value ||
+                                           prism::utilities::is_specialization<T_pt, std::unordered_map>::value)
                         {
                             if (item_count == 0)
                             {
-                                if constexpr (std::is_copy_constructible<T>::value)
-                                    model = T{};
+                                if constexpr (std::is_copy_constructible<T_pt>::value)
+                                    model = T_pt{};
                             }
                             derived::read_sub_kv(std::move(model), std::move(str), key_idx_start, key_idx_end, value_Idx_start, value_Idx_end);
                         }
-                        else if constexpr (utilities::has_def<jsonObject<T>>::value)
+                        else if constexpr (utilities::has_def<jsonObject<T_pt>>::value)
                         {
                             if (item_count == 0)
                             {
-                                if constexpr (std::is_copy_constructible<T>::value)
-                                    model = T{};
+                                if constexpr (std::is_copy_constructible<T_pt>::value)
+                                    model = T_pt{};
                             }
                             derived::read_sub_kv(std::move(model), std::move(str), key_idx_start, key_idx_end, value_Idx_start, value_Idx_end);
                         }
                         else
                         {
                             const char* msg = "The c++ type of the json object does not match, please check the c++ type";
+                            std::cout << prism::utilities::typeName<T_pt>::value << ":" << msg <<  std::endl;
                             throw msg;
                         }
                         ++item_count;
