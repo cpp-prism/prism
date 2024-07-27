@@ -1,7 +1,6 @@
 #ifndef PRISM_PRISM_H
 #define PRISM_PRISM_H
 
-
 #include "utilities/typeName.hpp"
 #include <cstring>
 #include <iostream>
@@ -38,7 +37,7 @@
     {                                                                                            \
     namespace enums                                                                              \
     {                                                                                            \
-    template <typename T>                                                                           \
+    template <typename T>                                                                        \
     struct enum_info<T, std::enable_if_t<std::is_same_v<T, en_t>, void>>                         \
     {                                                                                            \
         static std::map<T, const char*>& getEnumMap()                                            \
@@ -107,27 +106,24 @@
     }                                                                                                 \
     }
 
-
-#define PRISM_CLASS_ATTRIBUTE(AttributeName, Class, DefalutValue)                                     \
-    namespace prism                                                                                   \
-    {                                                                                                 \
-    namespace attributes                                                                              \
-    {                                                                                                 \
-    namespace privates                                                                                \
-    {                                                                                                 \
-    template <>                                                                                       \
-    struct class_attribute<Class,AttributeName>                                                       \
-    {                                                                                                 \
-        constexpr static std::stdoptional<AttributeName::value_type> value()                          \
-        {                                                                                             \
-            return DefalutValue;                                                                      \
-        }                                                                                             \
-    };                                                                                                \
-    }                                                                                                 \
-    }                                                                                                 \
+#define PRISM_CLASS_ATTRIBUTE(AttributeName, Class, DefalutValue)            \
+    namespace prism                                                          \
+    {                                                                        \
+    namespace attributes                                                     \
+    {                                                                        \
+    namespace privates                                                       \
+    {                                                                        \
+    template <>                                                              \
+    struct class_attribute<Class, AttributeName>                             \
+    {                                                                        \
+        constexpr static std::stdoptional<AttributeName::value_type> value() \
+        {                                                                    \
+            return DefalutValue;                                             \
+        }                                                                    \
+    };                                                                       \
+    }                                                                        \
+    }                                                                        \
     }
-
-
 
 #define PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(AttributeName, FieldType, DefalutValue) \
     namespace prism                                                               \
@@ -136,7 +132,7 @@
     {                                                                             \
     namespace privates                                                            \
     {                                                                             \
-    template <typename T, FieldType T::*fn>                                          \
+    template <typename T, FieldType T::*fn>                                       \
     struct field_attribute<T, FieldType, fn, AttributeName>                       \
     {                                                                             \
         constexpr static std::stdoptional<AttributeName::value_type> value()      \
@@ -154,13 +150,7 @@
                                                    memberFucPtr,                                                              \
                                                    AttributeName>::value();
 
-
-
-#define PRISM_GET_CLASS_ATTRIBUTE(Class, AttributeName) ::prism::attributes::privates::class_attribute<Class,AttributeName>::value();
-
-
-
-
+#define PRISM_GET_CLASS_ATTRIBUTE(Class, AttributeName) ::prism::attributes::privates::class_attribute<Class, AttributeName>::value();
 
 #define PRISM_IGNORE_FIELD(Class, Field, Business)                                                                                                           \
     namespace prism                                                                                                                                          \
@@ -322,10 +312,10 @@
     {                                                              \
     namespace privates                                             \
     {                                                              \
-    template <typename AT>                                            \
+    template <typename AT>                                         \
     struct st_field_attribute_do<Class, AT>                        \
     {                                                              \
-        template <typename LAM>                                       \
+        template <typename LAM>                                    \
         constexpr static void run(const char* fname, LAM&& lambda) \
         {                                                          \
             switch (prism::utilities::const_hash(fname))           \
@@ -493,7 +483,7 @@
     template <>                                                                                    \
     struct st_field_do<Class>                                                                      \
     {                                                                                              \
-        template <int BIS = 0, typename LAM>                                                          \
+        template <int BIS = 0, typename LAM>                                                       \
         constexpr static bool run(Class& model, const char* fname, LAM&& lambda, int& level)       \
         {                                                                                          \
             ++level;                                                                               \
@@ -695,7 +685,7 @@
     template <>                                               \
     struct st_visit_fields<Class>                             \
     {                                                         \
-        template <int BIS, typename Obj, typename Vis>              \
+        template <int BIS, typename Obj, typename Vis>        \
         constexpr static void run(Obj&& model, Vis&& visitor) \
         {
 #define INSERT_ITM(Class, Field1)                                                                                                                 \
@@ -708,7 +698,7 @@
     template <>                                                                                    \
     struct st_for_each_fields<Class>                                                               \
     {                                                                                              \
-        template <int BIS = 0, typename LAM>                                                          \
+        template <int BIS = 0, typename LAM>                                                       \
         constexpr static void run(Class& model, LAM&& lambda)                                      \
         {                                                                                          \
             using base_types = prism::reflection::privates::baseTypes<Class>::t;                   \
@@ -797,7 +787,6 @@ struct compareCharPointers
 namespace attributes
 {
 
-
 namespace privates
 {
 template <typename T, typename M, M T::*fn, int>
@@ -833,8 +822,7 @@ struct st_field_attribute_do
 
 } // namespace privates
 
-
-template <typename T,typename AT>
+template <typename T, typename AT>
 constexpr static inline typename std::optional<typename AT::value_type> getFieldAttr(const char* fname)
 {
     std::optional<typename AT::value_type> result = std::nullopt;
@@ -844,10 +832,10 @@ constexpr static inline typename std::optional<typename AT::value_type> getField
     return result;
 }
 
-template <typename T,typename AT>
+template <typename T, typename AT>
 constexpr static inline typename std::optional<typename AT::value_type> getClassAttr()
 {
-    return privates::class_attribute<T,AT>::value();
+    return privates::class_attribute<T, AT>::value();
 }
 
 } // namespace attributes
@@ -955,11 +943,11 @@ constexpr bool has_md()
     return false;
 }
 
-template <typename T>
+template <int BIS = 0, typename T>
 std::enable_if_t<has_md<T>(), void> copy(T& left, T& right)
 {
     for_each_fields(left, [&](const char* fname, auto&& lvalue) {
-        field_do<T>(right, fname, [&](auto&& rvalue) {
+        field_do<BIS, T>(right, fname, [&](auto&& rvalue) {
             if constexpr (std::is_same_v<decltype(lvalue), decltype(rvalue)>)
             {
                 lvalue = rvalue;
@@ -1012,6 +1000,5 @@ struct has_def
 } // namespace utilities
 
 } // namespace prism
-
 
 #endif // PRISM_PRISM_H
