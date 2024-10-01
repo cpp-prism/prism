@@ -168,16 +168,27 @@ struct Sqlite3:public Sql<Sqlite3>
                 }
 
                 using v_t = std::decay_t<std::decay_t<decltype(value)>>;
-                if (std::is_same_v<bool,v_t>)
+                if constexpr(prism::utilities::has_def<prism::enums::enum_info<v_t>>::value)
+                {
+                    sql << "\"" << prism::enums::enum_info<v_t>::tostring(value) << "\"";
+                }
+                else if constexpr(std::is_same_v<bool,std::string>)
+                {
+                    sql << "\"" << value.c_str() << "\"";
+                }
+                else if constexpr(std::is_same_v<bool,v_t>)
                 {
                     sql << std::boolalpha << value;
                 }
-                else if(!std::strcmp(datatype.value() , "TEXT"))
-                {
-                    sql << "\"" << value << "\"";
-                }
                 else
-                    sql << value;
+                {
+                 if(!std::strcmp(datatype.value() , "TEXT"))
+                    {
+                        sql << "\"" << value << "\"";
+                    }
+                    else
+                        sql << value;
+                }
 
 
             });
@@ -301,7 +312,8 @@ struct Sqlite3:public Sql<Sqlite3>
             sql << " ";
 
 
-            std::optional<const char* > datatype = prism::attributes::getFieldAttr<T,sql::sqlite3::attributes::Attr_sql_field_datatype>(fname);
+            //using v_t = std::decay_t<std::decay_t<decltype(value)>>;
+            std::optional<const char* >  datatype = prism::attributes::getFieldAttr<T,sql::sqlite3::attributes::Attr_sql_field_datatype>(fname);
             if(datatype.has_value())
             {
                 sql << datatype.value();
@@ -339,6 +351,8 @@ struct Sqlite3:public Sql<Sqlite3>
 } //namespace sql
 } //namespace prism
 
+
+
 PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_field_datatype , int           , "INTEGER")
 PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_field_datatype , long          , "INTEGER")
 PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_field_datatype , long long     , "INTEGER")
@@ -347,5 +361,32 @@ PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_fi
 PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_field_datatype , std::string   , "TEXT")
 PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_field_datatype , const char*   , "TEXT")
 PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(::prism::sql::sqlite3::attributes::Attr_sql_field_datatype , bool          , "INTEGER") //0 or 1
+
+
+
+/**
+ * 枚举需要让用户自己选择是用text类型还是int类型
+//enum -> sql string type
+
+    namespace prism
+    {
+    namespace attributes
+    {
+    namespace privates
+    {
+        template <typename T, typename M, M T::*fn>
+        struct field_attribute<T,std::enable_if<prism::utilities::has_def<prism::enums::enum_info<M>>::value,M>,fn,::prism::sql::sqlite3::attributes::Attr_sql_field_datatype>
+        {
+            constexpr static std::stdoptional<::prism::sql::sqlite3::attributes::Attr_sql_field_datatype::value_type> value()
+            {
+            return "TEXT";
+            }
+        };
+    }
+    }
+    }
+ */
+
+
 
 #endif // PRISM_PRISMSQL_HPP
