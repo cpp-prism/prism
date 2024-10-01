@@ -46,14 +46,16 @@ namespace json
 
 namespace attributes
 {
-struct Attr_json_ignore{
-    using value_type= bool;
+struct Attr_json_ignore
+{
+    using value_type = bool;
 };
-struct Attr_json_alias{
-    using value_type= const char*;
+struct Attr_json_alias
+{
+    using value_type = const char*;
 };
 
-} //namespace attributes
+} // namespace attributes
 
 namespace privates
 {
@@ -194,12 +196,12 @@ struct jsonObject<T, std::enable_if_t<prism::reflection::has_md<T>(), void>> : p
     {
         int count = 0;
         prism::reflection::for_each_fields<prism::utilities::const_hash("json")>(value, [&](const char* ffname, auto&& value_) {
-            std::optional<bool> isignore = prism::attributes::getFieldAttr<T,::prism::json::attributes::Attr_json_ignore>(ffname);
-            if(isignore.has_value() && isignore.value())
+            std::optional<bool> isignore = prism::attributes::getFieldAttr<T, ::prism::json::attributes::Attr_json_ignore>(ffname);
+            if (isignore.has_value() && isignore.value())
                 return;
-            std::optional<const char*> attr = prism::attributes::getFieldAttr<T,::prism::json::attributes::Attr_json_alias>(ffname);
+            std::optional<const char*> attr = prism::attributes::getFieldAttr<T, ::prism::json::attributes::Attr_json_alias>(ffname);
             std::string alias = ffname;
-            if(attr.has_value())
+            if (attr.has_value())
                 alias = attr.value();
             if (count)
             {
@@ -223,15 +225,15 @@ struct jsonObject<T, std::enable_if_t<prism::reflection::has_md<T>(), void>> : p
     {
         auto s = std::string(str.substr(kstart, kend - kstart));
 
-        if(!alias_map_.size())
+        if (!alias_map_.size())
         {
-            prism::reflection::for_each_fields<prism::utilities::const_hash("json")>(model, [&](const char* fname ,[[maybe_unused]]auto&& value) {
-                std::optional<bool> isignore = prism::attributes::getFieldAttr<T,::prism::json::attributes::Attr_json_ignore>(fname);
-                if(isignore.has_value() && isignore)
+            prism::reflection::for_each_fields<prism::utilities::const_hash("json")>(model, [&](const char* fname, [[maybe_unused]] auto&& value) {
+                std::optional<bool> isignore = prism::attributes::getFieldAttr<T, ::prism::json::attributes::Attr_json_ignore>(fname);
+                if (isignore.has_value() && isignore)
                     return;
-                std::optional<const char*> attr = prism::attributes::getFieldAttr<T,::prism::json::attributes::Attr_json_alias>(fname);
+                std::optional<const char*> attr = prism::attributes::getFieldAttr<T, ::prism::json::attributes::Attr_json_alias>(fname);
                 std::string alias = fname;
-                if(attr.has_value())
+                if (attr.has_value())
                     alias = attr.value();
                 alias_map_[alias] = fname;
             });
@@ -718,7 +720,8 @@ struct jsonArrayBase : public jsonValueBase<jsonArrayBase<derived>>
 
                         if (value_Idx_start != value_Idx_end)
                         {
-                            derived::read_sub_value(std::move(model), std::move(str), value_Idx_start, value_Idx_end + 1);
+                            // derived::read_sub_value(std::move(model), std::move(str), value_Idx_start, value_Idx_end + 1);
+                            derived::read_sub_value(std::move(model), std::move(str), value_Idx_start, value_Idx_end);
                         }
 
                         value_Idx_start = -1;
@@ -748,11 +751,11 @@ struct jsonArrayBase : public jsonValueBase<jsonArrayBase<derived>>
                         {
                             throw R"("'"' is not closed, but the json string of json array is over)";
                         }
-                        if (count_braket)
+                        if (count_braket % 2)
                         {
                             throw R"("'"' is not closed, but the json string of json array is over)";
                         }
-                        if (count_brace)
+                        if (count_brace % 2)
                         {
                             throw R"("'"' is not closed, but the json string of json array is over)";
                         }
@@ -780,7 +783,7 @@ struct jsonArrayBase : public jsonValueBase<jsonArrayBase<derived>>
 template <class derived>
 struct jsonObjectBase : public jsonValueBase<jsonObjectBase<derived>>
 {
-    static inline std::map<std::string,std::string> alias_map_;
+    static inline std::map<std::string, std::string> alias_map_;
 
     template <class T>
     constexpr static void append_sub_kvs([[maybe_unused]] std::ostringstream& stream, [[maybe_unused]] const char* fname, [[maybe_unused]] T&& value, [[maybe_unused]] int identation, [[maybe_unused]] int&& level)
@@ -870,8 +873,8 @@ struct jsonObjectBase : public jsonValueBase<jsonObjectBase<derived>>
                         value_Idx_end = pre_valid_char_idx;
                         if (c == ',')
                             comma_idx = i;
-                        using T_pt = std::remove_reference_t<std::remove_reference_t<T>> ;
-                        //std::cout << prism::utilities::typeName<T_pt>::value << " has MD: " << std::boolalpha <<  prism::reflection::has_md<T_pt>() << std::endl;
+                        using T_pt = std::remove_reference_t<std::remove_reference_t<T>>;
+                        // std::cout << prism::utilities::typeName<T_pt>::value << " has MD: " << std::boolalpha <<  prism::reflection::has_md<T_pt>() << std::endl;
                         if constexpr (prism::reflection::has_md<T_pt>())
                         {
                             derived::read_sub_kv(std::move(model), std::move(str), key_idx_start, key_idx_end, value_Idx_start, value_Idx_end);
@@ -898,7 +901,7 @@ struct jsonObjectBase : public jsonValueBase<jsonObjectBase<derived>>
                         else
                         {
                             const char* msg = "The c++ type of the json object does not match, please check the c++ type";
-                            std::cout << prism::utilities::typeName<T_pt>::value << ":" << msg <<  std::endl;
+                            std::cout << prism::utilities::typeName<T_pt>::value << ":" << msg << std::endl;
                             throw msg;
                         }
                         ++item_count;
@@ -934,11 +937,11 @@ struct jsonObjectBase : public jsonValueBase<jsonObjectBase<derived>>
                         {
                             throw R"("'"' is not closed, but the json string of json object is over)";
                         }
-                        if (count_braket)
+                        if (count_braket % 2)
                         {
                             throw R"("']' is not closed, but the json string of json object is over)";
                         }
-                        if (count_brace)
+                        if (count_brace % 2)
                         {
                             throw R"("'}' is not closed, but the json string of json object is over)";
                         }
