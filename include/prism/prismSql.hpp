@@ -92,7 +92,7 @@ struct Sqlite3:public Sql<Sqlite3>
     static inline std::string deleteTable()
     {
         std::stringstream sql;
-        sql << "DROP ";
+        sql << "DROP TABLE IF EXISTS  ";
         std::optional<const char*> tableName = prism::attributes::getClassAttr<T,sql::attributes::Attr_sql_class_alias>();
         if(tableName.has_value())
             sql << tableName.value();
@@ -100,7 +100,7 @@ struct Sqlite3:public Sql<Sqlite3>
             sql << prism::utilities::typeName<T>::value;
 
 
-        sql << " IF EXISTS;";
+        sql << " ;";
 
         return sql.str();
     }
