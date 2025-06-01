@@ -997,6 +997,16 @@ struct has_def
     static constexpr bool value = decltype(test<T>(nullptr))::value;
 };
 
+template<typename T>
+struct extract_shared_ptr_type {
+    using type = T;  // 默认就是原类型
+};
+
+template<typename U>
+struct extract_shared_ptr_type<std::shared_ptr<U>> {
+    using type = U;
+};
+
 } // namespace utilities
 
 } // namespace prism
