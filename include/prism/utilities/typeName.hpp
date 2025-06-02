@@ -21,11 +21,9 @@
 #endif
 #endif
 
-
-
-namespace prism::utilities{
-template <typename T>
-struct typeName
+namespace prism::utilities
+{
+template <typename T> struct typeName
 {
     constexpr static std::stdstring_view fullname_intern()
     {
@@ -45,13 +43,13 @@ struct typeName
         size_t target_len = (fullname_intern().size() - dummy_len) / multiple;
         std::stdstring_view rv = fullname_intern().substr(prefix_len, target_len);
 
-        //if (rv.rfind(' ') == rv.npos)
-        //    return rv;
+        // if (rv.rfind(' ') == rv.npos)
+        //     return rv;
         return rv.substr(rv.rfind(' ') + 1);
     }
 
     constexpr static std::stdstring_view value = name();
 };
 
-}//prism::utilities
+} // namespace prism::utilities
 #endif // PRISM_UTILITIES_TYPENAME_HPP
