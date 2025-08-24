@@ -1,0 +1,16 @@
+//println：会打印到 Gradle 输出中，适合调试
+//logger.lifecycle / logger.quiet / logger.debug：Gradle 官方推荐方法，可控制日志级别
+
+def cmakeFile = "${projectDir}/CMakeLists.txt"
+println "2222222222 CMake file path: ${cmakeFile}"
+
+// 或者用 Gradle Logger
+logger.lifecycle("2222222223 CMake file path: ${cmakeFile}")
+
+android{
+    externalNativeBuild {
+        cmake {
+            path "../CMakeLists.txt"
+        }
+    }
+}
