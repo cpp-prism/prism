@@ -10,17 +10,23 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = '12.0'
   s.osx.deployment_target = '10.15'
 
-  s.source       = { :git => "https://github.com/nocanstillbb/prism-rn.git" }
-  s.source_files = "prism/**/*.{h,hpp}"
-  s.private_header_files = "prism/**/*.{h,hpp}"
+  s.source_files = "include/**/*.{cpp,c,h,hpp}"
+  s.public_header_files = "include/**/*.{cpp,c,h,hpp}"
+  #s.private_header_files = "include/**/*.{cpp,c,h,hpp}"
+  s.header_mappings_dir = "include"
 
+
+  s.source       = { :git => "https://github.com/nocanstillbb/prism-rn.git" }
   root = File.expand_path(__dir__)
 
-  s.xcconfig = {
-    'HEADER_SEARCH_PATHS' => [
-      "\"#{root}/include/prism\"",
-    ].join(' ')
-  }
+
+  #s.xcconfig = {
+  #  'HEADER_SEARCH_PATHS' => [
+  #    "\"#{root}/include\"",
+  #    "\"#{root}/include/prism\"",
+  #    "\"#{root}/include/prism/utilities\"",
+  #  ].join(' ')
+  #}
 
   s.pod_target_xcconfig = {
     'CLANG_CXX_LANGUAGE_STANDARD' => 'c++17',
