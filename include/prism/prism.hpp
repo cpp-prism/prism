@@ -895,7 +895,8 @@ struct typeListVisitor<Sequence<Args...>>
 template <typename Sequence, typename F>
 constexpr static inline bool for_each_bases(F&& lam)
 {
-    return typeListVisitor<Sequence>::template run(lam);
+    return typeListVisitor<Sequence>:: run(lam); //?
+    //return typeListVisitor<Sequence>::template run(lam);
 }
 
 template <typename T>

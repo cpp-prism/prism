@@ -14,10 +14,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-#add_subdirectory(components/prism_container)
-#add_subdirectory(components/prism_qt_core)
-#add_subdirectory(components/prism_qt_modular)
-#add_subdirectory(components/prism_qt_ui)
 
 
 option(VCPKG_DISABLE_TEST "disable run test when vcpkg install " ON)
