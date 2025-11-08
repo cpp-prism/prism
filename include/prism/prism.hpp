@@ -910,6 +910,7 @@ struct st_field_do
     template <int BIS = 0, typename LAM>
     constexpr static bool run([[maybe_unused]] T& model, [[maybe_unused]] const char* fname, [[maybe_unused]] LAM&& lambda, [[maybe_unused]] int& level)
     {
+        std::cerr << "not found field [" << fname <<"]" << std::endl;
         return false;
     }
 };
