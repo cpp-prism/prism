@@ -2,6 +2,7 @@
 #define TEST_MODEL_H
 
 #include "../../include/prism/prismJson.hpp"
+#include "../../include/prism/prismSql.hpp"
 
 enum language
 {
@@ -16,7 +17,7 @@ PRISM_ENUM(language, {{unknow, "未知"},
                       {SimplifiedChinese, "简体中文"},
                       {TraditionalChinese, "瀪体中文"}})
 
-std::time_t initTimestamp(int year, int month, int day, int hour = 0, int min = 0, int second = 0)
+inline std::time_t initTimestamp(int year, int month, int day, int hour = 0, int min = 0, int second = 0)
 {
     std::tm timeInfo = {};
     timeInfo.tm_year = year - 1900; // 年份从 1900 年开始计数
@@ -29,7 +30,7 @@ std::time_t initTimestamp(int year, int month, int day, int hour = 0, int min = 
     std::time_t timestamp = std::mktime(&timeInfo);
     return timestamp;
 }
-std::chrono::system_clock::time_point initDatetime(int year, int month, int day, int hour = 0, int min = 0, int second = 0)
+inline std::chrono::system_clock::time_point initDatetime(int year, int month, int day, int hour = 0, int min = 0, int second = 0)
 {
     std::time_t timestamp = initTimestamp(year, month, day, hour, min, second);
     return std::chrono::system_clock::from_time_t(timestamp);
@@ -61,7 +62,7 @@ struct tst_struct
     std::string my_string = R"(测试有"号和有 的字符串)";
     std::optional<std::string> my_opt_str;
     std::optional<int> my_opt_int;
-    int* my_ptr_int;
+    int* my_ptr_int = nullptr;
     std::shared_ptr<int> my_sptr_int = std::make_shared<int>(2);
     std::optional<bool*> my_opt_ptr;
     tst_sub_struct my_struct;
@@ -77,6 +78,12 @@ struct tst_struct
     std::chrono::system_clock::time_point my_datetime;
     std::time_t my_timestamp{};
     language lang = language::SimplifiedChinese;
+    std::deque<int> my_deque_int;
+    std::set<std::string> my_set_str;
+    std::vector<language> my_vec_enum;
+    std::map<std::string, language> my_map_enum;
+    std::unique_ptr<tst_sub_struct> my_uptr_sub;
+    std::optional<tst_sub_struct> my_opt_struct;
 };
 
 /*
@@ -92,7 +99,7 @@ struct tst_struct
 PRISM_FIELD_ATTRIBUTE(prism::json::attributes::Attr_json_alias,&tst_struct::my_int,
                       "MY_INT1")
 
-PRISM_FIELDS(tst_struct, my_int, my_bool, my_float, my_double, my_longlong, my_string, my_opt_str, my_opt_int, my_ptr_int, my_sptr_int, my_opt_ptr, my_map, my_map2, my_unordermap, my_vec_sp, my_list_sp, my_list_int, my_list_std_string, my_shared_self, my_shared_sub, my_datetime, my_timestamp, lang)
+PRISM_FIELDS(tst_struct, my_int, my_bool, my_float, my_double, my_longlong, my_string, my_opt_str, my_opt_int, my_ptr_int, my_sptr_int, my_opt_ptr, my_struct, my_map, my_map2, my_unordermap, my_vec_sp, my_list_sp, my_list_int, my_list_std_string, my_shared_self, my_shared_sub, my_datetime, my_timestamp, lang, my_deque_int, my_set_str, my_vec_enum, my_map_enum, my_uptr_sub, my_opt_struct)
 
 struct Base1
 {
@@ -114,6 +121,73 @@ struct Derived : public Base1, Base2
 };
 PRISM_CLASS_BASE_TYPES(Derived, Base1, Base2)
 PRISM_FIELDS(Derived, d_int, d_float)
+
+// SQL 测试用结构体
+struct database_table
+{
+    int id = 1;
+    std::string guid = "2";
+    bool myBool = true;
+    float myFloat = 4.1;
+    double myDouble = 5.230;
+};
+PRISM_FIELDS(database_table, id, guid, myBool, myFloat, myDouble);
+PRISM_CLASS_ATTRIBUTE(prism::sql::attributes::Attr_sql_class_alias, database_table, "table_database_table")
+PRISM_FIELD_ATTRIBUTE(prism::sql::attributes::Attr_sql_field_isPrimaryKey, &database_table::id, true)
+PRISM_FIELD_ATTRIBUTE(prism::sql::attributes::Attr_sql_field_isPrimaryKey, &database_table::guid, true)
+PRISM_FIELD_ATTRIBUTE(prism::sql::attributes::Attr_sql_field_alias, &database_table::guid, "Uid")
+PRISM_FIELD_ATTRIBUTE(prism::sql::attributes::Attr_sql_field_ignore, &database_table::myFloat, true)
+PRISM_FIELD_ATTRIBUTE(prism::sql::sqlite3::attributes::Attr_sql_field_datatype, &database_table::myDouble, "INT")
+
+struct simple_table
+{
+    int id = 0;
+    std::string name = "";
+};
+PRISM_FIELDS(simple_table, id, name)
+
+struct alias_test
+{
+    int original_name = 0;
+};
+PRISM_FIELDS(alias_test, original_name)
+PRISM_FIELD_ATTRIBUTE(prism::sql::attributes::Attr_sql_field_alias, &alias_test::original_name, "aliased_name")
+
+struct ignore_test
+{
+    int keep = 0;
+    int ignore = 0;
+};
+PRISM_FIELDS(ignore_test, keep, ignore)
+PRISM_FIELD_ATTRIBUTE(prism::sql::attributes::Attr_sql_field_ignore, &ignore_test::ignore, true)
+
+// custom_datatype_test 已重命名为 datatype_test
+struct custom_datatype_test
+{
+    int myint = 0;
+    std::string mystr = "";
+};
+PRISM_FIELDS(custom_datatype_test, myint, mystr)
+
+struct datatype_test
+{
+    int myint = 0;
+    std::string mystr = "";
+};
+PRISM_FIELDS(datatype_test, myint, mystr)
+
+// 4 层深度嵌套测试 struct（仅用于深层嵌套测试，不加入 tst_struct）
+struct level3 { int val = 0; std::string name; };
+PRISM_FIELDS(level3, val, name)
+
+struct level2 { level3 inner; int x = 0; };
+PRISM_FIELDS(level2, inner, x)
+
+struct level1 { level2 middle; std::string tag; };
+PRISM_FIELDS(level1, middle, tag)
+
+struct level0 { level1 top; double score = 0.0; };
+PRISM_FIELDS(level0, top, score)
 
 template <class T>
 constexpr void append2ostream(std::ostream& stream, T& value)

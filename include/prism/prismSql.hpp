@@ -67,7 +67,7 @@ struct Sql
     template<class T>
     static inline std::string insert(std::vector<std::shared_ptr<T>> models)
     {
-        return derived::template insert(models);
+        return derived::template insert<T>(models);
     }
 };
 
@@ -145,11 +145,7 @@ struct Sqlite3:public Sql<Sqlite3>
 
 
                 std::optional<const char* > datatype = prism::attributes::getFieldAttr<T,sql::sqlite3::attributes::Attr_sql_field_datatype>(fname);
-                if(!datatype.has_value())
-                {
-                    std::string msg = std::string("field:") + fname +" hadn't config sql datatype";
-                    std::cout << msg << std::endl;
-                }
+                // NOTE: field without datatype will use default from PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE
 
                 using v_t = std::decay_t<std::decay_t<decltype(value)>>;
                 if (std::is_same_v<bool,v_t>)

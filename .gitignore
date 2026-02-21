@@ -63,3 +63,5 @@ node_modules
 CLAUDE.md
 build/
 vcpkg_installed/
+.cache/
+Testing/

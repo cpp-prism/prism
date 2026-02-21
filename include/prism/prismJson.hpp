@@ -31,10 +31,14 @@ std::tuple<const char*, errc> from_chars(const char* const _First, const char* c
 #include <list>
 #include <locale>
 #include <map>
+#include <set>
 #include <memory>
 #include <sstream>
 #include <string_view>
 #include <type_traits>
+#include <unordered_set>
+#include <unordered_map>
+#include <deque>
 #include <vector>
 
 #define PRISM_IGNORE_JSON_FIELD(Class, Field) PRISM_IGNORE_FIELD(Class, Field, json)
@@ -86,27 +90,20 @@ template <class T>
 static std::enable_if_t<std::is_same_v<float, T> || std::is_same_v<double, T>, std::string> formatfloat(const T& value)
 {
     std::stringstream ss;
-    ss << std::fixed << std::setprecision(15) << std::showpoint << value;
+    // float 使用 7 位精度，double 使用 15 位精度
+    if constexpr (std::is_same_v<float, T>)
+        ss << std::fixed << std::setprecision(7) << std::showpoint << value;
+    else
+        ss << std::fixed << std::setprecision(15) << std::showpoint << value;
     std::string str = ss.str();
 
     // 去掉尾随的零
-    size_t dotPos = str.find_last_of('.');
-    if (dotPos != std::string::npos)
+    if (str.find('.') != std::string::npos)
     {
-        while (true)
-        {
-            size_t zeroPos = str.find_last_of('0');
-            if (zeroPos != std::string::npos && zeroPos > dotPos)
-            {
-                str.erase(zeroPos); // 去掉小数点后的尾随零
-                if (str.back() == '.')
-                {
-                    str.pop_back(); // 如果整个小数部分都是零，去掉小数点
-                }
-            }
-            else
-                break;
-        }
+        while (!str.empty() && str.back() == '0')
+            str.pop_back();
+        if (!str.empty() && str.back() == '.')
+            str.pop_back();
     }
     return str;
 }
@@ -146,7 +143,7 @@ struct jsonType<T, std::enable_if_t<prism::reflection::has_md<T>() || (!utilitie
     using type = jsonObject<T>;
 };
 template <class T>
-struct jsonType<T, std::enable_if_t<!prism::reflection::has_md<T>() && !utilities::has_def<prism::json::privates::jsonValue<T>>::value && !utilities::has_def<prism::json::privates::jsonObject<T>>::value && utilities::has_def<prism::json::privates::jsonArray<T>>::value, void>>
+struct jsonType<T, std::enable_if_t<!prism::reflection::has_md<T>() && !utilities::has_def<prism::json::privates::jsonValue<T>>::value && !utilities::has_def<prism::json::privates::jsonObject<T>>::value && (utilities::has_def<prism::json::privates::jsonArray<T>>::value || prism::utilities::is_specialization<T, std::set>::value || prism::utilities::is_specialization<T, std::unordered_set>::value || prism::utilities::is_specialization<T, std::deque>::value), void>>
 {
     using type = jsonArray<T>;
 };
@@ -188,6 +185,127 @@ struct jsonArray<T, std::enable_if_t<prism::utilities::is_specialization<T, std:
         jsonType<ft_>::type::from_jsonStr(std::move(v), std::move(str), start, end);
     }
 };
+
+//=================== ================= json array for set ================= ==================
+template <class T>
+struct jsonArray<T, std::enable_if_t<prism::utilities::is_specialization<T, std::set>::value,
+                                     void>> : public jsonArrayBase<jsonArray<T>>
+{
+    constexpr static void append_sub_values([[maybe_unused]] std::ostringstream& stream, [[maybe_unused]] const char* fname, [[maybe_unused]] const T& value, [[maybe_unused]] int identation, [[maybe_unused]] int level)
+    {
+        auto a = value.begin();
+        while (value.size() && a != value.end())
+        {
+            if (a != value.begin()) {
+                stream << ',';
+            }
+            if (identation) {
+                if (a != value.begin()) {
+                    stream << std::endl;
+                }
+                for (int i = 0; i < identation * (level); ++i) {
+                    stream << " ";
+                }
+            }
+            using v_t = typename T::value_type;
+            using iter_ref_t = decltype(*a);
+            if constexpr (std::is_const_v<std::remove_reference_t<iter_ref_t>>) {
+                v_t tmp = *a;
+                jsonType<v_t>::type::append_value(stream, nullptr, std::move(tmp), identation, std::move(level));
+            } else {
+                jsonType<v_t>::type::append_value(stream, nullptr, std::move(*a), identation, std::move(level));
+            }
+            a++;
+        }
+    }
+
+    constexpr static void read_sub_value(T&& model, std::string_view str, int start, int end)
+    {
+        using ft_ = typename T::value_type;
+        ft_ v;
+        jsonType<ft_>::type::from_jsonStr(std::move(v), str, start, end);
+        model.insert(std::move(v));
+    }
+};
+
+//=================== ================= json array for unordered_set ================= ==================
+template <class T>
+struct jsonArray<T, std::enable_if_t<prism::utilities::is_specialization<T, std::unordered_set>::value,
+                                     void>> : public jsonArrayBase<jsonArray<T>>
+{
+    constexpr static void append_sub_values([[maybe_unused]] std::ostringstream& stream, [[maybe_unused]] const char* fname, [[maybe_unused]] const T& value, [[maybe_unused]] int identation, [[maybe_unused]] int level)
+    {
+        auto a = value.begin();
+        while (value.size() && a != value.end())
+        {
+            if (a != value.begin()) {
+                stream << ',';
+            }
+            if (identation) {
+                if (a != value.begin()) {
+                    stream << std::endl;
+                }
+                for (int i = 0; i < identation * (level); ++i) {
+                    stream << " ";
+                }
+            }
+            using v_t = typename T::value_type;
+            using iter_ref_t = decltype(*a);
+            if constexpr (std::is_const_v<std::remove_reference_t<iter_ref_t>>) {
+                v_t tmp = *a;
+                jsonType<v_t>::type::append_value(stream, nullptr, std::move(tmp), identation, std::move(level));
+            } else {
+                jsonType<v_t>::type::append_value(stream, nullptr, std::move(*a), identation, std::move(level));
+            }
+            a++;
+        }
+    }
+
+    constexpr static void read_sub_value(T&& model, std::string_view str, int start, int end)
+    {
+        using ft_ = typename T::value_type;
+        ft_ v;
+        jsonType<ft_>::type::from_jsonStr(std::move(v), str, start, end);
+        model.insert(std::move(v));
+    }
+};
+
+//=================== ================= json array for deque ================= ==================
+template <class T>
+struct jsonArray<T, std::enable_if_t<prism::utilities::is_specialization<T, std::deque>::value,
+                                     void>> : public jsonArrayBase<jsonArray<T>>
+{
+    constexpr static void append_sub_values([[maybe_unused]] std::ostringstream& stream, [[maybe_unused]] const char* fname, [[maybe_unused]] T&& value, [[maybe_unused]] int identation, [[maybe_unused]] int level)
+    {
+        auto a = std::move(value).begin();
+        while (std::move(value).size() && a != std::move(value).end())
+        {
+            if (a != value.begin()) {
+                stream << ',';
+            }
+            if (identation) {
+                if (a != value.begin()) {
+                    stream << std::endl;
+                }
+                for (int i = 0; i < identation * (level); ++i) {
+                    stream << " ";
+                }
+            }
+            using v_t = typename T::value_type;
+            jsonType<v_t>::type::append_value(stream, nullptr, std::move(*a), identation, std::move(level));
+            a++;
+        }
+    }
+
+    constexpr static void read_sub_value([[maybe_unused]] T&& model, [[maybe_unused]] std::string_view str, [[maybe_unused]] int start, [[maybe_unused]] int end)
+    {
+        using ft_ = typename T::value_type;
+        model.emplace_back();
+        ft_& v = model.back();
+        jsonType<ft_>::type::from_jsonStr(std::move(v), std::move(str), start, end);
+    }
+};
+
 //=================== ================= json object ================= ==================
 template <class T>
 struct jsonObject<T, std::enable_if_t<prism::reflection::has_md<T>(), void>> : public jsonObjectBase<jsonObject<T>>
@@ -198,14 +316,18 @@ struct jsonObject<T, std::enable_if_t<prism::reflection::has_md<T>(), void>> : p
     constexpr static void append_sub_kvs([[maybe_unused]] std::ostringstream& stream, [[maybe_unused]] const char* fname, [[maybe_unused]] T&& value, [[maybe_unused]] int identation, [[maybe_unused]] int level)
     {
         int count = 0;
+        bool has_fields = false;
         prism::reflection::for_each_fields<prism::utilities::const_hash("json")>(value, [&](const char* ffname, auto&& value_) {
+            has_fields = true;
             std::optional<bool> isignore = prism::attributes::getFieldAttr<T,::prism::json::attributes::Attr_json_ignore>(ffname);
-            if(isignore.has_value() && isignore.value())
+            if(isignore.has_value() && isignore.value()) {
                 return;
+            }
             std::optional<const char*> attr = prism::attributes::getFieldAttr<T,::prism::json::attributes::Attr_json_alias>(ffname);
             std::string alias = ffname;
-            if(attr.has_value())
+            if(attr.has_value()) {
                 alias = attr.value();
+            }
             if (count)
             {
                 stream << ',';
@@ -222,6 +344,10 @@ struct jsonObject<T, std::enable_if_t<prism::reflection::has_md<T>(), void>> : p
 
             ++count;
         });
+        // If no fields were processed, output empty object
+        if (!has_fields) {
+            stream << '{}';
+        }
     }
 
     static void read_sub_kv([[maybe_unused]] T&& model, [[maybe_unused]] std::string_view str, [[maybe_unused]] int kstart, [[maybe_unused]] int kend, [[maybe_unused]] int vstart, [[maybe_unused]] int vend)
@@ -331,17 +457,22 @@ struct jsonValue<T, std::enable_if_t<prism::utilities::has_def<prism::enums::enu
 
     static void from_jsonStr([[maybe_unused]] T&& model, [[maybe_unused]] std::string_view str, [[maybe_unused]] int start, [[maybe_unused]] int end)
     {
-        if (end - start == 3 &&
-            (str[start] == 't' || str[start] == 'T') &&
-            (str[start + 1] == 'r' || str[start + 1] == 'R') &&
-            (str[start + 2] == 'u' || str[start + 2] == 'U') &&
-            (str[start + 3] == 'e' || str[start + 3] == 'E'))
+        if (str[start] == '"')
         {
-            model = prism::enums::enum_info<T>::fromstring(nullptr);
+            // Extract value between quotes; works for both inclusive and exclusive end convention:
+            // - exclusive end: loop stops at end (past closing quote), break exits at closing '"'
+            // - inclusive end: loop stops at end (the closing quote index), break is never triggered
+            std::string val;
+            for (int i = start + 1; i < end; ++i)
+            {
+                if (str[i] == '"') break;
+                val += str[i];
+            }
+            model = prism::enums::enum_info<T>::fromstring(val.empty() ? nullptr : val.c_str());
         }
         else
         {
-            model = prism::enums::enum_info<T>::fromstring(std::string(str.substr(start + 1, end - start - 1)).c_str());
+            model = prism::enums::enum_info<T>::fromstring(std::string(str.substr(start, end - start)).c_str());
         }
     }
 };
@@ -372,9 +503,10 @@ struct jsonValue<T, std::enable_if_t<std::is_same_v<bool, T>,
 };
 
 template <class T>
-struct jsonValue<T, std::enable_if_t<std::is_same_v<char*, T> ||
-                                         std::is_same_v<const char*, T> ||
-                                         std::is_same_v<std::string, T>,
+struct jsonValue<T, std::enable_if_t<!std::is_arithmetic_v<T> &&
+                                         (std::is_same_v<char*, T> ||
+                                          std::is_same_v<const char*, T> ||
+                                          std::is_same_v<std::string, T>),
                                      void>> : public jsonValueBase<jsonValue<T>>
 {
     constexpr static void append_value([[maybe_unused]] std::ostringstream& stream, [[maybe_unused]] const char* fname, [[maybe_unused]] T&& value, [[maybe_unused]] int identation, [[maybe_unused]] int level)
@@ -384,13 +516,32 @@ struct jsonValue<T, std::enable_if_t<std::is_same_v<char*, T> ||
             stream << '"';
             for (const auto& ch : value)
             {
-                if (ch == '"')
+                switch (ch)
                 {
+                case '"':
                     stream << "\\\"";
-                }
-                else
-                {
+                    break;
+                case '\\':
+                    stream << "\\\\";
+                    break;
+                case '\b':
+                    stream << "\\b";
+                    break;
+                case '\f':
+                    stream << "\\f";
+                    break;
+                case '\n':
+                    stream << "\\n";
+                    break;
+                case '\r':
+                    stream << "\\r";
+                    break;
+                case '\t':
+                    stream << "\\t";
+                    break;
+                default:
                     stream << ch;
+                    break;
                 }
             }
             stream << '"';
@@ -412,7 +563,35 @@ struct jsonValue<T, std::enable_if_t<std::is_same_v<char*, T> ||
                 auto& c = str[i];
                 if (isEscaped)
                 {
-                    unquotedStr += c;
+                    // 处理转义序列
+                    switch (c)
+                    {
+                    case '"':
+                        unquotedStr += '"';
+                        break;
+                    case '\\':
+                        unquotedStr += '\\';
+                        break;
+                    case 'b':
+                        unquotedStr += '\b';
+                        break;
+                    case 'f':
+                        unquotedStr += '\f';
+                        break;
+                    case 'n':
+                        unquotedStr += '\n';
+                        break;
+                    case 'r':
+                        unquotedStr += '\r';
+                        break;
+                    case 't':
+                        unquotedStr += '\t';
+                        break;
+                    default:
+                        // 未知转义序列，直接添加字符
+                        unquotedStr += c;
+                        break;
+                    }
                     isEscaped = false;
                 }
                 else if (c == '\\')
@@ -495,6 +674,9 @@ struct jsonValue<T, std::enable_if_t<std::is_arithmetic_v<T> &&
             stream << static_cast<int>(value);
         else if constexpr (std::is_same_v<float, T> || std::is_same_v<double, T>)
             stream << formatfloat(value);
+        else if constexpr (std::is_same_v<char, T> || std::is_same_v<unsigned char, T> ||
+                          std::is_same_v<short, T> || std::is_same_v<unsigned short, T>)
+            stream << static_cast<int>(value);
         // stream << std::fixed << std::showpoint  << value;
         else
             stream << value;
@@ -517,8 +699,23 @@ struct jsonValue<T, std::enable_if_t<std::is_arithmetic_v<T> &&
     }
 
     template <class TT>
+    static std::enable_if_t<std::is_same_v<TT, long double>,
+                            void>
+    from_jsonStr([[maybe_unused]] TT&& model, [[maybe_unused]] std::string_view str, [[maybe_unused]] int start, [[maybe_unused]] int end)
+    {
+        std::string numStr;
+        for (int i = start; i <= end; ++i)
+        {
+            if (!is_whitespace(str[i]))
+                numStr += str[i];
+        }
+        model = std::strtold(numStr.c_str(), nullptr);
+    }
+
+    template <class TT>
     static std::enable_if_t<!std::is_same_v<TT, float> &&
-                                !std::is_same_v<T, double>,
+                                !std::is_same_v<T, double> &&
+                                !std::is_same_v<T, long double>,
                             void>
     from_jsonStr([[maybe_unused]] TT&& model, [[maybe_unused]] std::string_view str, [[maybe_unused]] int start, [[maybe_unused]] int end)
     {
@@ -530,14 +727,6 @@ struct jsonValue<T, std::enable_if_t<std::is_arithmetic_v<T> &&
         {
             model = c;
         }
-        else if (ec == std::errc::invalid_argument)
-        {
-            std::cout << "That isn't a number:" << std::string(str.substr(start, end - start)) << std::endl;
-        }
-        else if (ec == std::errc::result_out_of_range)
-            std::cout << "This number out of range:" << std::string(str.substr(start, end - start)) << std::endl;
-        else
-            std::cout << "atoi error, a is :" << tmp << std::endl;
     }
 };
 
@@ -559,11 +748,23 @@ struct jsonValue<T, std::enable_if_t<prism::utilities::is_specialization<T, std:
 
     void static from_jsonStr([[maybe_unused]] T&& model, [[maybe_unused]] std::string_view str, [[maybe_unused]] int start, [[maybe_unused]] int end)
     {
-        if (!(end - start == 3 &&
-              str[start] == 'n' &&
-              str[start + 1] == 'u' &&
-              str[start + 2] == 'l' &&
-              str[start + 3] == 'l'))
+        // Check for "null" - handle both inclusive end (end-start==3) and exclusive end (end-start==4)
+        bool isNull = false;
+        if (end - start == 3) {
+            // inclusive end: "null" at indices start, start+1, start+2, start+3
+            isNull = (str[start] == 'n' &&
+                      str[start + 1] == 'u' &&
+                      str[start + 2] == 'l' &&
+                      str[start + 3] == 'l');
+        } else if (end - start == 4) {
+            // exclusive end: "null" at indices start, start+1, start+2, start+3
+            isNull = (str[start] == 'n' &&
+                      str[start + 1] == 'u' &&
+                      str[start + 2] == 'l' &&
+                      str[start + 3] == 'l');
+        }
+
+        if (!isNull)
         {
             using obj_t = typename T::value_type;
             model = std::make_optional<obj_t>();
@@ -604,11 +805,22 @@ struct jsonValue<T, std::enable_if_t<std::is_pointer_v<T> ||
     void static from_jsonStr([[maybe_unused]] T&& model, [[maybe_unused]] std::string_view str, [[maybe_unused]] int start, [[maybe_unused]] int end)
     {
         using obj_t = std::remove_cv_t<std::remove_reference_t<decltype(*model)>>;
-        if (!(end - start == 3 &&
-              str[start] == 'n' &&
-              str[start + 1] == 'u' &&
-              str[start + 2] == 'l' &&
-              str[start + 3] == 'l'))
+        // Check for "null" - handle both inclusive end (end-start==3) and exclusive end (end-start==4)
+        bool isNull = false;
+        if (end - start == 3) {
+            // inclusive end: "null" at indices start, start+1, start+2, start+3
+            isNull = (str[start] == 'n' &&
+                      str[start + 1] == 'u' &&
+                      str[start + 2] == 'l' &&
+                      str[start + 3] == 'l');
+        } else if (end - start == 4) {
+            // exclusive end: "null" at indices start, start+1, start+2, start+3
+            isNull = (str[start] == 'n' &&
+                      str[start + 1] == 'u' &&
+                      str[start + 2] == 'l' &&
+                      str[start + 3] == 'l');
+        }
+        if (!isNull)
         {
             if constexpr (prism::utilities::is_specialization<T, std::weak_ptr>::value ||
                           prism::utilities::is_specialization<T, std::shared_ptr>::value)
@@ -636,7 +848,13 @@ struct jsonValue<T, std::enable_if_t<std::is_pointer_v<T> ||
         }
         else
         {
-            // model = obj_t{};
+            // null: model remains as nullptr/null state (default-constructed)
+            if constexpr (prism::utilities::is_specialization<T, std::shared_ptr>::value)
+                model = nullptr;
+            else if constexpr (prism::utilities::is_specialization<T, std::unique_ptr>::value)
+                model = nullptr;
+            else if constexpr (std::is_pointer_v<T>)
+                model = nullptr;
         }
     }
 };
@@ -718,12 +936,38 @@ struct jsonArrayBase : public jsonValueBase<jsonArrayBase<derived>>
                         value_Idx_start = i;
                     else if (value_Idx_start != -1 && value_Idx_end == -1 && !(count_quote % 2) && ((c == ',' && count_brace + count_braket == 1) || (count_braket == 0 && c == ']')))
                     {
-
-                        value_Idx_end = pre_valid_char_idx;
-
-                        if (value_Idx_start != value_Idx_end)
+                        // 对于嵌套对象/数组，pre_valid_char_idx 不包含 } 和 ]，需要内部扫描
+                        // 注意：对象解析器的 from_jsonStr 使用包含性末端（end+1 循环），
+                        //       所以嵌套值传 value_Idx_end（包含性），简单值传 value_Idx_end+1（排他性）
+                        bool is_nested = (str[value_Idx_start] == '{' || str[value_Idx_start] == '[');
+                        if (is_nested)
                         {
-                            derived::read_sub_value(std::forward<TT>(model), std::forward<std::string_view>(str), value_Idx_start, value_Idx_end + 1);
+                            int inner_brace = 0;
+                            int inner_bracket = 0;
+                            size_t str_size = str.size();
+                            for (size_t j = value_Idx_start; j < str_size; ++j)
+                            {
+                                if (str[j] == '[')  ++inner_bracket;
+                                else if (str[j] == ']') --inner_bracket;
+                                else if (str[j] == '{') ++inner_brace;
+                                else if (str[j] == '}') --inner_brace;
+                                if (inner_bracket == 0 && inner_brace == 0)
+                                {
+                                    value_Idx_end = static_cast<int>(j);
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            value_Idx_end = pre_valid_char_idx;
+                        }
+
+                        if (value_Idx_start <= value_Idx_end)
+                        {
+                            // 嵌套对象/数组使用包含性末端（不加 1），简单值使用排他性末端（加 1）
+                            int sub_end = is_nested ? value_Idx_end : value_Idx_end + 1;
+                            derived::read_sub_value(std::forward<TT>(model), std::forward<std::string_view>(str), value_Idx_start, sub_end);
                         }
 
                         value_Idx_start = -1;
@@ -777,7 +1021,7 @@ struct jsonArrayBase : public jsonValueBase<jsonArrayBase<derived>>
                 }
             }
             pre_char_idx = i;
-            if (count_quote % 2 == 0 && !is_whitespace(c))
+            if (count_quote % 2 == 0 && !is_whitespace(c) && c != ',' && c != ']' && c != '}')
                 pre_valid_char_idx = i;
         }
     }
@@ -872,7 +1116,34 @@ struct jsonObjectBase : public jsonValueBase<jsonObjectBase<derived>>
                         value_Idx_start = i;
                     else if (value_Idx_start != -1 && value_Idx_end == -1 && comma_idx == -1 && !(count_quote % 2) && ((c == ',' && count_braket + count_brace == 1) || (count_brace == 0 && c == '}')))
                     {
-                        value_Idx_end = pre_valid_char_idx;
+                        // 如果值以 [ 或 { 开头，需要找到对应的结束括号
+                        if (str[value_Idx_start] == '[' || str[value_Idx_start] == '{')
+                        {
+                            // 查找对应的结束括号位置
+                            int inner_brace = 0;
+                            int inner_bracket = 0;
+                            size_t str_size = str.size();
+                            for (size_t j = value_Idx_start; j < str_size; ++j)
+                            {
+                                if (str[j] == '[')
+                                    ++inner_bracket;
+                                else if (str[j] == ']')
+                                    --inner_bracket;
+                                else if (str[j] == '{')
+                                    ++inner_brace;
+                                else if (str[j] == '}')
+                                    --inner_brace;
+                                if (inner_bracket == 0 && inner_brace == 0)
+                                {
+                                    value_Idx_end = static_cast<int>(j);
+                                    break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            value_Idx_end = pre_valid_char_idx;
+                        }
                         if (c == ',')
                             comma_idx = i;
                         if (c == ',')
@@ -962,7 +1233,7 @@ struct jsonObjectBase : public jsonValueBase<jsonObjectBase<derived>>
                 }
             }
             pre_char_idx = i;
-            if (count_quote % 2 == 0 && !is_whitespace(c))
+            if (count_quote % 2 == 0 && !is_whitespace(c) && c != ',' && c != ']' && c != '}')
                 pre_valid_char_idx = i;
         }
     }

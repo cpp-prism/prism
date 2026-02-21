@@ -1,0 +1,62 @@
+#include "../models/test_model.h"
+#include "../../include/prism/prismJson.hpp"
+#include <catch2/catch_test_macros.hpp>
+
+TEST_CASE("prismJson - my_shared_sub with vec_sp children round trip", "[json][shared_ptr][struct][vec]")
+{
+    SECTION("my_shared_sub non-null with nested fields round trip")
+    {
+        tst_struct obj;
+        obj.my_int = 1;
+        obj.my_list_int.clear();
+        obj.my_list_std_string.clear();
+        obj.my_shared_sub = std::make_shared<tst_sub_struct>();
+        obj.my_shared_sub->my_int = 50;
+        obj.my_shared_sub->my_longlong = 9999LL;
+
+        std::string json = prism::json::toJsonString(obj);
+        auto result = prism::json::fromJsonString<tst_struct>(json);
+
+        REQUIRE(result->my_shared_sub != nullptr);
+        REQUIRE(result->my_shared_sub->my_int == 50);
+        REQUIRE(result->my_shared_sub->my_longlong == 9999LL);
+    }
+
+    SECTION("my_shared_sub null round trip")
+    {
+        tst_struct obj;
+        obj.my_int = 2;
+        obj.my_list_int.clear();
+        obj.my_list_std_string.clear();
+        obj.my_shared_sub.reset();
+
+        std::string json = prism::json::toJsonString(obj);
+        auto result = prism::json::fromJsonString<tst_struct>(json);
+
+        REQUIRE(result->my_shared_sub == nullptr);
+    }
+
+    SECTION("my_shared_sub with vec_sp on obj round trip")
+    {
+        tst_struct obj;
+        obj.my_int = 3;
+        obj.my_list_int.clear();
+        obj.my_list_std_string.clear();
+        obj.my_shared_sub = std::make_shared<tst_sub_struct>();
+        obj.my_shared_sub->my_int = 11;
+
+        tst_sub_struct sub;
+        sub.my_int = 22;
+        sub.my_longlong = 333LL;
+        obj.my_vec_sp.push_back(sub);
+
+        std::string json = prism::json::toJsonString(obj);
+        auto result = prism::json::fromJsonString<tst_struct>(json);
+
+        REQUIRE(result->my_shared_sub != nullptr);
+        REQUIRE(result->my_shared_sub->my_int == 11);
+        REQUIRE(result->my_vec_sp.size() == 1);
+        REQUIRE(result->my_vec_sp[0].my_int == 22);
+        REQUIRE(result->my_vec_sp[0].my_longlong == 333LL);
+    }
+}

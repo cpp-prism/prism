@@ -1,260 +1,165 @@
-# test models
+# Prism - C++ Reflection Framework
+
+A lightweight C++17 header-only reflection framework with JSON/YAML/SQL support.
+
+```c++
+// Include all at once
+#include <prism/prism.hpp>
+#include <prism/prismJson.hpp>
+#include <prism/prismYaml.hpp>
+#include <prism/prismSql.hpp>
+```
+
+## Features
+
+- **Runtime reflection** - Iterate fields, get/set values by name
+- **JSON serialization** - Serialize/deserialize objects to/from JSON
+- **YAML serialization** - Serialize/deserialize objects to/from YAML
+- **SQL generation** - Generate SQL statements from C++ structures
+- **Attribute support** - Custom annotations for fields and classes
+
+## Quick Start
 
 ```c++
 #include <prism/prism.hpp>
+#include <prism/prismJson.hpp>
 #include <iostream>
-#include <optional>
 
-namespace mynamespace{
-enum Enum_color{
-  Undefine = 0,
-  Black = 1,
-  Red = 2
+// 1. Define your structure
+struct Person {
+    std::string name;
+    int age;
+    std::vector<std::string> hobbies;
 };
+PRISM_FIELDS(Person, name, age, hobbies);
 
-struct BaseModel
-{
-   std::string base_mystr = "guid";
-   int base_myint = 1;
-};
-  
-struct TstSubModel: public BaseModel
-{
-  Enum_color color;
-};
-  
-struct TstModel: public BaseModel
-{
-  int myint = 0;
-  double mydouble = 1.123;
-  std::shared_ptr<TstSubModel> mysubmodel = std::make_shared<TstSubModel>();
-};
-  
-struct Attr_alias{
-  using value_type = const char*;
-};
-  
-} // namespace mynamespace
-```
+// 2. JSON serialization
+int main() {
+    Person p{"Alice", 30, {"reading", "coding"}};
 
+    // Serialize to JSON
+    std::string json = prism::json::toJsonString(p);
+    std::cout << json << std::endl;
+    // Output: {"name":"Alice","age":30,"hobbies":["reading","coding"]}
 
-
-# registe enum
-
-```c++
-PRISM_ENUM(mynamespace::Enum_color , { {mynamespace::black,"Black"},
-                                       {mynamespace::red,"Red"} })
-```
-
-
-
-# registe fields
-
-```c++
-PRISM_FIELDS(mynamespace::BaseModel,base_myint,base_mystr)
-PRISM_FIELDS(mynamespace::TstSubModel,color)
-PRISM_FIELDS(mynamespace::TstModel,myint,mydouble,mysubmodel)
-```
-
-
-
-# registe  base types
-
-```c++
-PRISM_CLASS_BASE_TYPES(mynamespace::TstModel,mynamespace::BaseModel/* , others if has multiple...*/)
-PRISM_CLASS_BASE_TYPES(mynamespace::TstSubModel,mynamespace::BaseModel)
-```
-
-
-
-# foreach fields
-
-```c++
-mynamespace::TstModel model{};
-prism::reflection::for_each_fields(model,[](const char* fieldName,auto&& value){
-  // do get or set value 
-});
-```
-
-
-
-# reflect a field by field's name
-
-```c++
-TstModel model{};
-prism::reflection::field_do(model,"myint"[](auto&& value){
-  // do get or set value
-});
-```
-
-
-
-# ignore a field 
-
-```
-PRISM_IGNORE_FIELD(mynamespace::TstModel , myint, "someBusinessName")
-PRISM_IGNORE_FIELD(mynamespace::TstModel , mydoule, "someBusinessName")
-
-int main(){
-
-
-    mynamespace::TstModel model{};
-
-    int count = 0;
-    prism::reflection::for_each_fields(model,[&](const char* fname,auto&& value){
-        std::cout << fname << std::endl;
-        ++count;
-    }); //print all field's names of model
-
-    std::cout << "count : " << count << std::endl; //print 5
-
-
-    count = 0;
-    prism::reflection::for_each_fields<prism::utilities::const_hash("someBusinessName")>(model,[](const char* fname,auto&& value){
-        std::cout << fname << std::endl;
-        ++count;
-    }); //will not print "myint" and "mydouble"
-    std::cout << "count : " << count << std::endl; //print 3 
-
-
+    // Deserialize from JSON
+    auto p2 = prism::json::fromJsonString<Person>(json);
+    std::cout << p2->name << " is " << p2->age << " years old" << std::endl;
 }
 ```
 
-
-
-# field's atrribute
+## Extended Container Support
 
 ```c++
-PRISM_FIELDTYPE_DEFAULT_ATTRIBUTE(mynamespace::Attr_alias, int,"int type field's default alias")
-PRISM_FIELD_ATTRIBUTE(mynamespace::Attr_alias, &mynamespace::TstModel::myint,"TestModel::myint alias")
-
-int main(){
-  
-  std::optional<const char*> alias ;
-  
-  alias = PRISM_GET_FIELD_ATTRIBUTE(&mynamespace::BaseModel::base_myint, mynamespace::Attr_alias);
-  if(alias.has_value())
-    std::cout << alias.value() << std::endl; // will print "int type field's default alias"
-  
-  alias = PRISM_GET_FIELD_ATTRIBUTE(&mynamespace::TstModel::myint, mynamespace::Attr_alias);
-  if(alias.has_value())
-    std::cout << alias.value() << std::endl; // will print "TestModel::myint alias"
-  
-}
-  
-
-
-```
-
-
-
-# class's attribute
-
-```c++
-PRISM_CLASS_ATTRIBUTE(mynamespace::TstModel, mynamespace::Attr_alias,"class alias")
-
-int main()
-{
-   std::optional<const char*> alias = PRISM_GET_CLASS_ATTRIBUTE(mynamespace::TstModel,mynamespace::Attr_alias);
-   if(alias.has_value())
-     std::cout << alias.value() << std::endl; // will print "class alias"
-}
-```
-
-
-
-# prism json
-
-```c++
+#include <set>
+#include <unordered_set>
+#include <deque>
 #include <prism/prismJson.hpp>
 
-PRISM_IGNORE_JSON_FIELD(mynamespace::TstModel,myint)
+// All standard containers work out of the box
+std::set<int> numbers = {1, 2, 3};
+std::string json = prism::json::toJsonString(numbers);
+// Output: [1,2,3]
 
-PRISM_FIELD_ATTRIBUTE(prism::json::attributes::Attr_json_alias,&mynamespace::TestModel::my_int,
-                      "MY_INT_ALIAS")
-
-
-int main()
-{
-  std::shared_ptr<mynamespace::TstModel> model = std::make_shared<mynamespace::TstModel>();
-  std::json json = prism::json::toJsonString(*model,4);//  Indentation with 4 spaces.default is 0 spaces.
-  std::shared_ptr<mynamespace::TstModel> model2 = prism::json::fromJsonString<mynamespace::TstModel>(json);
-}
-
+// Nested containers are fully supported
+std::vector<std::set<int>> nested = {{1, 2}, {3, 4}};
+std::string json2 = prism::json::toJsonString(nested);
+// Output: [[1,2],[3,4]]
+auto result = prism::json::fromJsonString<decltype(nested)>(json2);
 ```
 
+## Enum Support
 
+```c++
+#include <prism/prism.hpp>
 
-# prism sql (just generate sql string)
+enum class Color { Red, Green, Blue };
+PRISM_ENUM(Color, {{Color::Red, "Red"}, {Color::Green, "Green"}, {Color::Blue, "Blue"}})
+
+Color c = Color::Red;
+std::string json = prism::json::toJsonString(c);
+// Output: "Red"
+```
+
+## Field Attributes
+
+```c++
+#include <prism/prism.hpp>
+#include <optional>
+
+struct Config {
+    std::string database_url;
+    int timeout = 30;
+};
+PRISM_FIELDS(Config, database_url, timeout);
+
+// Must be in global scope, not inside class
+PRISM_IGNORE_JSON_FIELD(Config, database_url)
+
+// Use alias in JSON
+PRISM_FIELD_ATTRIBUTE(prism::json::attributes::Attr_json_alias,
+                      &Config::timeout, "connect_timeout")
+
+// Get field attribute
+int main() {
+    std::optional<const char*> alias = prism::attributes::getFieldAttr<
+        Config, prism::json::attributes::Attr_json_alias>(&Config::timeout);
+    if (alias.has_value()) {
+        std::cout << *alias << std::endl; // print "connect_timeout"
+    }
+}
+```
+
+## SQL Generation
 
 ```c++
 #include <prism/prismSql.hpp>
-struct database_table
-{
-    int id = 1;
-    std::string  guid = "2";
-    bool  myBool = true;
-    float myFloat = 4.1;
-    double myDouble = 5.230;
+
+struct User {
+    int id;
+    std::string email;
 };
+PRISM_FIELDS(User, id, email);
 
-PRISM_FIELDS(database_table,id,guid,myBool,myFloat,myDouble);
+PRISM_CLASS_ATTRIBUTE(prism::sql::attributes::Attr_sql_class_alias,
+                      User, "users")
 
+// Generate SQL statements
+using Sqlite3 = prism::sql::Sql<prism::sql::sqlite3::Sqlite3>;
 
-PRISM_CLASS_ATTRIBUTE(prism::sql::attributes::Attr_sql_class_alias, database_table , "database_table_alias")
-
-PRISM_FIELD_ATTRIBUTE(prism::sql::attributes::Attr_sql_field_isPrimaryKey, &database_table::id , true)
-PRISM_FIELD_ATTRIBUTE(prism::sql::attributes::Attr_sql_field_isPrimaryKey , &database_table::guid , true)
-
-PRISM_FIELD_ATTRIBUTE(prism::sql::attributes::Attr_sql_field_alias , &database_table::guid , "Uid")
-
-PRISM_FIELD_ATTRIBUTE(prism::sql::attributes::Attr_sql_field_ignore , &database_table::myFloat , true)
-
-PRISM_FIELD_ATTRIBUTE(prism::sql::sqlite3::attributes::Attr_sql_field_datatype , &database_table::myDouble , "INT")
-  
-int main()
-{
-    using prismSqlite3 = prism::sql::Sql<prism::sql::sqlite3::Sqlite3>;
-    //SECTION("test sqlite insert single table  ")
-    {
-        std::vector<std::shared_ptr<database_table>> models{
-            std::make_shared<database_table>(),
-            std::make_shared<database_table>(),
-            std::make_shared<database_table>()
-        };
-
-        std::string sql = prismSqlite3::insert<database_table>(models);
-        std::cout << "============================================="  << std::endl;
-        std::cout << "insert sql"  << std::endl;
-        std::cout << "============================================="  << std::endl;
-        std::cout << sql << std::endl;
-
-    }
-
-
-
-    //SECTION("test sqlite query single table  ")
-    {
-        std::string sql = prismSqlite3::queryTable<database_table>();
-        std::cout << "============================================="  << std::endl;
-        std::cout << "query table"  << std::endl;
-        std::cout << "============================================="  << std::endl;
-        std::cout << sql << std::endl;
-
-    }
-
-
-
-    //SECTION("test sqlite create table  ")
-    {
-        std::string sql = prismSqlite3::createTable<database_table>();
-        std::cout << "============================================="  << std::endl;
-        std::cout << "create table"  << std::endl;
-        std::cout << "============================================="  << std::endl;
-        std::cout << sql << std::endl;
-
-    }
-}
-
+User user{1, "alice@example.com"};
+std::string insert = Sqlite3::insert<User>(&user);
+std::string query = Sqlite3::queryTable<User>();
+std::string create = Sqlite3::createTable<User>();
 ```
 
+## API Reference
+
+### Reflection
+- `prism::reflection::for_each_fields(obj, lambda)` - Iterate all fields
+- `prism::reflection::field_do(obj, name, lambda)` - Access field by name
+
+### JSON
+- `prism::json::toJsonString(obj, indent=0)` - Serialize to JSON
+- `prism::json::fromJsonString<T>(json)` - Deserialize from JSON
+
+### YAML
+
+```c++
+#include <prism/prismYaml.hpp>
+
+Person p{"Bob", 25, {"music"}};
+
+// Serialize to YAML (block format)
+std::string yaml = prism::yaml::toYamlString(p);
+
+// Deserialize from YAML
+auto p2 = prism::yaml::fromYamlString<Person>(yaml);
+```
+
+## Tests
+
+Run tests with:
+```bash
+cd build && make test
+```

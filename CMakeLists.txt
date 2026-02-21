@@ -32,6 +32,7 @@ set(HEADERS
     include/prism/prism.hpp
     include/prism/prismJson.hpp
     include/prism/prismSql.hpp
+    include/prism/prismYaml.hpp
     include/prism/utilities/typeName.hpp
     )
 
@@ -107,16 +108,41 @@ endif()
 # test
 
 if(CMAKE_PROJECT_NAME STREQUAL "${PROJECT_NAME}")
-    find_package(unofficial-sqlite3 CONFIG REQUIRED)
+    # Try to find sqlite3 using vcpkg's config first, then fall back to FindPackage
+    find_package(unofficial-sqlite3 CONFIG QUIET)
+    if(NOT unofficial-sqlite3_FOUND)
+        find_package(SQLite3 REQUIRED)
+    endif()
+
     find_package(Catch2 REQUIRED)
     include(CTest)
     include(Catch)
 
-    #test prism json
-    set(TST_PRISM_SOURCE tests/test_prism.cpp tests/models/test_model.h)
-    add_executable(tst_${PROJECT_NAME} ${TST_PRISM_SOURCE} )
+    # test prism - collect all test files
+    # main.cpp provides the Catch2 runner main function
+    file(GLOB_RECURSE TST_YAML_SOURCES "tests/yaml_tests/*.cpp")
+    file(GLOB_RECURSE TST_JSON_SOURCES "tests/json_tests/*.cpp")
+    file(GLOB_RECURSE TST_SQL_SOURCES "tests/sql_tests/*.cpp")
+    file(GLOB_RECURSE TST_REFLECTION_SOURCES "tests/reflection_tests/*.cpp")
+    # test prism - collect all test files
+    file(GLOB_RECURSE TST_YAML_SOURCES "tests/yaml_tests/*.cpp")
+    file(GLOB_RECURSE TST_JSON_SOURCES "tests/json_tests/*.cpp")
+    file(GLOB_RECURSE TST_SQL_SOURCES "tests/sql_tests/*.cpp")
+    file(GLOB_RECURSE TST_REFLECTION_SOURCES "tests/reflection_tests/*.cpp")
+    # main.cpp provides the Catch2 runner, other test files only define test cases
+    set(TST_PRISM_SOURCE tests/models/test_model.h tests/main.cpp
+        ${TST_YAML_SOURCES}
+        ${TST_JSON_SOURCES}
+        ${TST_SQL_SOURCES}
+        ${TST_REFLECTION_SOURCES})
+
+    add_executable(tst_${PROJECT_NAME} ${TST_PRISM_SOURCE})
     target_compile_features(tst_${PROJECT_NAME} PUBLIC cxx_std_17)
-    target_link_libraries(tst_${PROJECT_NAME} PRIVATE Catch2::Catch2  unofficial::sqlite3::sqlite3)
+    if(unofficial-sqlite3_FOUND)
+        target_link_libraries(tst_${PROJECT_NAME} PRIVATE Catch2::Catch2 unofficial::sqlite3::sqlite3)
+    else()
+        target_link_libraries(tst_${PROJECT_NAME} PRIVATE Catch2::Catch2 SQLite::SQLite3)
+    endif()
     catch_discover_tests(tst_${PROJECT_NAME})
 
 

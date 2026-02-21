@@ -87,6 +87,32 @@
 
 // ATTRIBUTE
 
+// MSVC需要更简单的类型推导方式
+#if defined(_MSC_VER) && !defined(__clang__)
+#define PRISM_FIELD_ATTRIBUTE(AttributeName, memberFucPtr, DefalutValue)             \
+    namespace prism                                                                  \
+    {                                                                                \
+    namespace attributes                                                             \
+    {                                                                                \
+    namespace privates                                                               \
+    {                                                                                \
+    template <>                                                                      \
+    struct field_attribute<typename std::remove_pointer<decltype(                   \
+                                     prism::utilities::getT(memberFucPtr))>::type, \
+                             typename std::remove_pointer<decltype(                  \
+                                     prism::utilities::getMT(memberFucPtr))>::type, \
+                             memberFucPtr,                                           \
+                             AttributeName>                                          \
+    {                                                                                \
+        constexpr static std::stdoptional<AttributeName::value_type> value()        \
+        {                                                                            \
+            return DefalutValue;                                                     \
+        }                                                                            \
+    };                                                                               \
+    }                                                                                \
+    }                                                                                \
+    }
+#else
 #define PRISM_FIELD_ATTRIBUTE(AttributeName, memberFucPtr, DefalutValue)                              \
     namespace prism                                                                                   \
     {                                                                                                 \
@@ -108,6 +134,7 @@
     }                                                                                                 \
     }                                                                                                 \
     }
+#endif
 
 #define PRISM_CLASS_ATTRIBUTE(AttributeName, Class, DefalutValue)            \
     namespace prism                                                          \

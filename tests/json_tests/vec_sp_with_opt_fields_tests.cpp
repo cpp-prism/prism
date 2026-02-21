@@ -1,0 +1,73 @@
+#include "../models/test_model.h"
+#include "../../include/prism/prismJson.hpp"
+#include <catch2/catch_test_macros.hpp>
+
+TEST_CASE("prismJson - my_vec_sp elements with optional fields round trip", "[json][vec][optional][fields]")
+{
+    SECTION("my_vec_sp element with opt_str populated round trip")
+    {
+        tst_struct obj;
+        obj.my_int = 1;
+        obj.my_list_int.clear();
+        obj.my_list_std_string.clear();
+
+        tst_sub_struct sub;
+        sub.my_int = 10;
+        sub.my_opt_str = "sub_optional";
+        obj.my_vec_sp.push_back(sub);
+
+        std::string json = prism::json::toJsonString(obj);
+        auto result = prism::json::fromJsonString<tst_struct>(json);
+
+        REQUIRE(result->my_vec_sp.size() == 1);
+        REQUIRE(result->my_vec_sp[0].my_int == 10);
+        REQUIRE(result->my_vec_sp[0].my_opt_str.has_value());
+        REQUIRE(result->my_vec_sp[0].my_opt_str.value() == "sub_optional");
+    }
+
+    SECTION("my_vec_sp element with opt_str null round trip")
+    {
+        tst_struct obj;
+        obj.my_int = 2;
+        obj.my_list_int.clear();
+        obj.my_list_std_string.clear();
+
+        tst_sub_struct sub;
+        sub.my_int = 20;
+        sub.my_opt_str = std::nullopt;
+        obj.my_vec_sp.push_back(sub);
+
+        std::string json = prism::json::toJsonString(obj);
+        auto result = prism::json::fromJsonString<tst_struct>(json);
+
+        REQUIRE(result->my_vec_sp.size() == 1);
+        REQUIRE(result->my_vec_sp[0].my_int == 20);
+        REQUIRE(!result->my_vec_sp[0].my_opt_str.has_value());
+    }
+
+    SECTION("my_vec_sp two elements with different opt_int values round trip")
+    {
+        tst_struct obj;
+        obj.my_int = 3;
+        obj.my_list_int.clear();
+        obj.my_list_std_string.clear();
+
+        tst_sub_struct s1;
+        s1.my_int = 1;
+        s1.my_opt_int = 100;
+        obj.my_vec_sp.push_back(s1);
+
+        tst_sub_struct s2;
+        s2.my_int = 2;
+        s2.my_opt_int = std::nullopt;
+        obj.my_vec_sp.push_back(s2);
+
+        std::string json = prism::json::toJsonString(obj);
+        auto result = prism::json::fromJsonString<tst_struct>(json);
+
+        REQUIRE(result->my_vec_sp.size() == 2);
+        REQUIRE(result->my_vec_sp[0].my_opt_int.has_value());
+        REQUIRE(result->my_vec_sp[0].my_opt_int.value() == 100);
+        REQUIRE(!result->my_vec_sp[1].my_opt_int.has_value());
+    }
+}
