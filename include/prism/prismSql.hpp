@@ -67,7 +67,7 @@ struct Sql
     template<class T>
     static inline std::string insert(std::vector<std::shared_ptr<T>> models)
     {
-        return derived::template insert(models);
+        return derived::template insert<T>(models);
     }
 };
 

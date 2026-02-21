@@ -1,0 +1,214 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master, develop ]
+  workflow_dispatch:
+
+env:
+  # 固定 vcpkg 版本保证可重复性
+  VCPKG_COMMIT_ID: "2026.01.16"
+
+jobs:
+  test-linux:
+    name: Linux - GCC (x64-linux)
+    runs-on: ubuntu-latest
+    env:
+      CXX: g++
+      CC: gcc
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg
+          cd /opt/vcpkg
+          git checkout ${{ env.VCPKG_COMMIT_ID }}
+
+      - name: Cache vcpkg dependencies
+        uses: actions/cache@v4
+        with:
+          path: /opt/vcpkg/packages
+          key: ${{ runner.os }}-x64-linux-gcc-vcpkg-${{ env.VCPKG_COMMIT_ID }}
+          restore-keys: |
+            ${{ runner.os }}-x64-linux-gcc-vcpkg-
+
+      - name: Configure CMake
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake
+
+      - name: Build
+        run: |
+          cd build
+          cmake --build .
+
+      - name: Run tests with CTest
+        run: |
+          cd build
+          ctest --output-on-failure
+
+  test-linux-clang:
+    name: Linux - Clang (x64-linux)
+    runs-on: ubuntu-latest
+    env:
+      CXX: clang++
+      CC: clang
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install vcpkg
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git /opt/vcpkg
+          cd /opt/vcpkg
+          git checkout ${{ env.VCPKG_COMMIT_ID }}
+
+      - name: Cache vcpkg dependencies
+        uses: actions/cache@v4
+        with:
+          path: /opt/vcpkg/packages
+          key: ${{ runner.os }}-x64-linux-clang-vcpkg-${{ env.VCPKG_COMMIT_ID }}
+          restore-keys: |
+            ${{ runner.os }}-x64-linux-clang-vcpkg-
+
+      - name: Configure CMake
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=/opt/vcpkg/scripts/buildsystems/vcpkg.cmake
+
+      - name: Build
+        run: |
+          cd build
+          cmake --build .
+
+      - name: Run tests with CTest
+        run: |
+          cd build
+          ctest --output-on-failure
+
+  test-windows:
+    name: Windows - MSVC (x64-windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install vcpkg
+        run: |
+          Remove-Item -Recurse -Force C:/vcpkg -ErrorAction SilentlyContinue
+          git clone https://github.com/microsoft/vcpkg.git C:/vcpkg
+          cd C:/vcpkg
+          git checkout ${{ env.VCPKG_COMMIT_ID }}
+
+      - name: Cache vcpkg dependencies
+        uses: actions/cache@v4
+        with:
+          path: C:/vcpkg/packages
+          key: ${{ runner.os }}-x64-windows-vcpkg-${{ env.VCPKG_COMMIT_ID }}
+          restore-keys: |
+            ${{ runner.os }}-x64-windows-vcpkg-
+
+      - name: Configure CMake
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+
+      - name: Build
+        run: |
+          cd build
+          cmake --build .
+
+      - name: Run tests with CTest
+        run: |
+          cd build
+          ctest --output-on-failure
+
+  test-windows-mingw:
+    name: Windows - MinGW (x64-mingw-static)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: git mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-make
+
+      - uses: actions/checkout@v4
+
+      - name: Install vcpkg
+        run: |
+          rm -rf vcpkg
+          git clone https://github.com/microsoft/vcpkg.git 
+          cd vcpkg
+          ./bootstrap-vcpkg.sh
+          git checkout ${{ env.VCPKG_COMMIT_ID }}
+
+      - name: Cache vcpkg dependencies
+        uses: actions/cache@v4
+        with:
+          path: vcpkg/packages
+          key: ${{ runner.os }}-x64-mingw-static-vcpkg-${{ env.VCPKG_COMMIT_ID }}
+          restore-keys: |
+            ${{ runner.os }}-x64-mingw-static-vcpkg-${{ env.VCPKG_COMMIT_ID }}
+
+      - name: Configure CMake
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=x64-mingw-static 
+
+      - name: Build
+        run: |
+          cd build
+          cmake --build .
+
+      - name: Run tests with CTest
+        run: |
+          cd build
+          ctest --output-on-failure
+
+  test-macos:
+    name: macOS - ${{ matrix.triplet }}
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        triplet: [x64-osx, arm64-osx]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install vcpkg
+        run: |
+          rm -rf ${{ runner.temp }}/vcpkg
+          git clone https://github.com/microsoft/vcpkg.git ${{ runner.temp }}/vcpkg
+          cd ${{ runner.temp }}/vcpkg
+          git checkout ${{ env.VCPKG_COMMIT_ID }}
+
+      - name: Cache vcpkg dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/vcpkg/packages
+          key: ${{ runner.os }}-${{ matrix.triplet }}-vcpkg-${{ env.VCPKG_COMMIT_ID }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.triplet }}-vcpkg-
+
+      - name: Configure CMake
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=${{ runner.temp }}/vcpkg/scripts/buildsystems/vcpkg.cmake
+
+      - name: Build
+        run: |
+          cd build
+          cmake --build .
+
+      - name: Run tests with CTest
+        run: |
+          cd build
+          ctest --output-on-failure

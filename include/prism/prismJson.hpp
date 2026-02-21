@@ -200,12 +200,14 @@ struct jsonObject<T, std::enable_if_t<prism::reflection::has_md<T>(), void>> : p
         int count = 0;
         prism::reflection::for_each_fields<prism::utilities::const_hash("json")>(value, [&](const char* ffname, auto&& value_) {
             std::optional<bool> isignore = prism::attributes::getFieldAttr<T,::prism::json::attributes::Attr_json_ignore>(ffname);
-            if(isignore.has_value() && isignore.value())
+            if(isignore.has_value() && isignore.value()) {
                 return;
+            }
             std::optional<const char*> attr = prism::attributes::getFieldAttr<T,::prism::json::attributes::Attr_json_alias>(ffname);
             std::string alias = ffname;
-            if(attr.has_value())
+            if(attr.has_value()) {
                 alias = attr.value();
+            }
             if (count)
             {
                 stream << ',';
@@ -530,14 +532,6 @@ struct jsonValue<T, std::enable_if_t<std::is_arithmetic_v<T> &&
         {
             model = c;
         }
-        else if (ec == std::errc::invalid_argument)
-        {
-            std::cout << "That isn't a number:" << std::string(str.substr(start, end - start)) << std::endl;
-        }
-        else if (ec == std::errc::result_out_of_range)
-            std::cout << "This number out of range:" << std::string(str.substr(start, end - start)) << std::endl;
-        else
-            std::cout << "atoi error, a is :" << tmp << std::endl;
     }
 };
 

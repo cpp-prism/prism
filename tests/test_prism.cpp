@@ -354,7 +354,6 @@ TEST_CASE("test prism")
         ofs << json;
         ofs2 << json2;
     }
-    SKIP();
 
     SECTION("test sqlite insert single table  ")
     {
@@ -368,8 +367,6 @@ TEST_CASE("test prism")
         std::cout << sql << std::endl;
     }
 
-    SKIP();
-
     SECTION("test sqlite query single table  ")
     {
         std::string sql = prism::sql::Sql<prism::sql::sqlite3::Sqlite3>::queryTable<database_table>();
@@ -378,8 +375,6 @@ TEST_CASE("test prism")
         std::cout << "=============================================" << std::endl;
         std::cout << sql << std::endl;
     }
-
-    SKIP();
 
     SECTION("test sqlite create table  ")
     {

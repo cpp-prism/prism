@@ -61,7 +61,7 @@ struct tst_struct
     std::string my_string = R"(测试有"号和有 的字符串)";
     std::optional<std::string> my_opt_str;
     std::optional<int> my_opt_int;
-    int* my_ptr_int;
+    int* my_ptr_int = nullptr;
     std::shared_ptr<int> my_sptr_int = std::make_shared<int>(2);
     std::optional<bool*> my_opt_ptr;
     tst_sub_struct my_struct;
