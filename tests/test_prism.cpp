@@ -42,6 +42,132 @@ PRISM_FIELD_ATTRIBUTE(prism::sql::sqlite3::attributes::Attr_sql_field_datatype, 
 
 TEST_CASE("test prism")
 {
+    SECTION("test sqlite insert single table  ")
+    {
+        std::vector<std::shared_ptr<database_table>> models{
+            std::make_shared<database_table>(),
+            std::make_shared<database_table>(),
+            std::make_shared<database_table>()
+        };
+
+        std::string sql = prism::sql::Sql<prism::sql::sqlite3::Sqlite3>::insert<database_table>(models);
+        std::cout << "============================================="  << std::endl;
+        std::cout << "insert sql"  << std::endl;
+        std::cout << "============================================="  << std::endl;
+        std::cout << sql << std::endl;
+
+    }
+
+    SECTION("test sqlite query single table  ")
+    {
+        std::string sql = prism::sql::Sql<prism::sql::sqlite3::Sqlite3>::queryTable<database_table>();
+        std::cout << "============================================="  << std::endl;
+        std::cout << "query table"  << std::endl;
+        std::cout << "============================================="  << std::endl;
+        std::cout << sql << std::endl;
+
+    }
+
+    SECTION("test sqlite create table  ")
+    {
+        std::string sql = prism::sql::Sql<prism::sql::sqlite3::Sqlite3>::createTable<database_table>();
+        std::cout << "============================================="  << std::endl;
+        std::cout << "create table"  << std::endl;
+        std::cout << "============================================="  << std::endl;
+        std::cout << sql << std::endl;
+
+    }
+
+
+    SECTION("reflect base type fields")
+    {
+        Derived d;
+
+        std::cout << "====reflect base type's  fields  by static iterator  start: " << std::endl;
+        prism::reflection::for_each_fields(d, [&](const char* fname, auto&& v) {
+            std::cout << fname << " : " << v << std::endl;
+        });
+
+        std::cout << std::endl;
+        std::cout << "====reflect base type's field  by name start " << std::endl;
+        prism::reflection::field_do(d, "b1_int", [&](auto&& v) {
+            std::cout << "b1_int"
+                      << " : " << v << std::endl;
+        });
+
+        std::cout << std::endl;
+        std::cout << std::endl;
+        std::cout << std::endl;
+        std::cout << std::endl;
+        std::cout << std::endl;
+        std::cout << std::endl;
+        std::cout << std::endl;
+    }
+
+    SECTION("reflect all field")
+    {
+        tst_struct instance_1;
+        tst_struct instance_2;
+
+        instance_1.my_int = 1;
+        instance_1.my_bool = true;
+        instance_1.my_float = 1.1f;
+        instance_1.my_double = 2.2;
+        instance_1.my_string = "333";
+        instance_1.my_longlong = 4444;
+        instance_1.my_opt_str = std::make_optional<std::string>("hehe");
+        instance_1.my_opt_int = 3;
+        instance_1.my_ptr_int = new int(4);
+        instance_1.my_opt_ptr = std::make_optional<bool*>();
+
+        std::map<const char*, void*> map0;
+        std::map<const char*, void*> map1;
+
+        prism::reflection::field_do<prism::utilities::const_hash("tst")>(instance_1, "my_int", [](auto&& value) {
+            std::cout << "tst _ field_do : ";
+            append2ostream(std::cout, value);
+        });
+
+        // put instance_1 's field values into map0
+        prism::reflection::for_each_fields(instance_1, [&](const char* fname, auto&& value) {
+            map0[fname] = reinterpret_cast<void*>(&value);
+        });
+
+        // put 把map0's values into instance_2's fields
+        prism::reflection::for_each_fields(instance_2, [&](const char* fname, auto&& value) {
+            using t_ = std::decay_t<decltype(value)>;
+            value = *reinterpret_cast<t_*>(map0[fname]);
+        });
+        // put instance_2 's field values into map1
+        prism::reflection::for_each_fields(instance_1, [&](const char* fname, auto&& value) {
+            map1[fname] = reinterpret_cast<void*>(&value);
+        });
+
+        prism::reflection::for_each_fields<prism::utilities::const_hash("tst")>(instance_2, [&](const char* fname, auto&& value) {
+            using t_ = std::decay_t<decltype(value)>;
+            t_ value1 = *reinterpret_cast<t_*>(map0[fname]);
+            t_ value2 = *reinterpret_cast<t_*>(map1[fname]);
+            std::cout << "instance_1." << fname << " : ";
+            append2ostream(std::cout, value1);
+            std::cout << "instance_2." << fname << " : ";
+            append2ostream(std::cout, value2);
+            std::cout << std::endl;
+            // CHECK(value1 == value2);
+        });
+        delete instance_1.my_ptr_int;
+    }
+
+    SECTION("refelect fields ")
+    {
+        tst_struct inst;
+        prism::reflection::field_do(inst, "my_string", [=](auto&& value) {
+            if constexpr (std::is_same_v<std::string, std::decay_t<decltype(value)>>)
+            {
+                REQUIRE(inst.my_string == value);
+            }
+        });
+    }
+
     SECTION("json测试")
     {
         tst_struct instance_1;

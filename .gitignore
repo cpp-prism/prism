@@ -60,3 +60,6 @@ build
 
 node_modules
 *.swp
+CLAUDE.md
+build/
+vcpkg_installed/
