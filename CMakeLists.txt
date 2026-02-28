@@ -25,7 +25,7 @@ if(DEFINED ENV{Qt6_DIR})
 endif()
 
 
-option(VCPKG_DISABLE_TEST "disable run test when vcpkg install " ON)
+option(PRISM_EN_TEST "enable prism unit test" OFF)
 
 #
 set(HEADERS
@@ -107,7 +107,7 @@ endif()
 
 # test
 
-if(CMAKE_PROJECT_NAME STREQUAL "${PROJECT_NAME}")
+if(PRISM_EN_TEST AND CMAKE_PROJECT_NAME STREQUAL "${PROJECT_NAME}")
     # Try to find sqlite3 using vcpkg's config first, then fall back to FindPackage
     find_package(unofficial-sqlite3 CONFIG QUIET)
     if(NOT unofficial-sqlite3_FOUND)
@@ -148,7 +148,4 @@ if(CMAKE_PROJECT_NAME STREQUAL "${PROJECT_NAME}")
 
 
 
-#execute_process(COMMAND ${CMAKE_COMMAND} -E echo "
-#----------
-#----------" )
 endif()
