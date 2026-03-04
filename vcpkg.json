@@ -1,12 +1,11 @@
 {
   "name": "prism",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "port-version": 1,
   "description": "prism",
   "homepage": "https://github.com/cpp-prism/prism",
   "dependencies": [
     "catch2",
-    "sqlite3",
     {
       "name": "vcpkg-cmake",
       "host": true

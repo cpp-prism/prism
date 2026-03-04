@@ -346,7 +346,7 @@ struct jsonObject<T, std::enable_if_t<prism::reflection::has_md<T>(), void>> : p
         });
         // If no fields were processed, output empty object
         if (!has_fields) {
-            stream << '{}';
+            stream << "{}";
         }
     }
 
